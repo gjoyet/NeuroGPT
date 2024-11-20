@@ -1,10 +1,13 @@
 import os
 import pdb
 import numpy as np
-from batcher.base import EEGDataset
+from base import EEGDataset
 from scipy.io import loadmat
 from scipy.signal import butter, filtfilt
 
+
+# TODO: go through dataset creation step by step, check when it is transformed from mne.Epochs to numpy.ndarray
+# Also check if I put the channels in correct order.
 class MotorImageryDataset(EEGDataset):
     def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", gpt_only=True):
         super().__init__(filenames, sample_keys, chunk_len, num_chunks, ovlp, root_path=root_path, gpt_only=gpt_only)
