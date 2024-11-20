@@ -1,5 +1,5 @@
 import numpy as np
-from base import EEGDataset
+from batcher.base import EEGDataset
 
 
 class CHBDataset(EEGDataset):

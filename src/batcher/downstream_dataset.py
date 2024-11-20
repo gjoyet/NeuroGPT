@@ -1,7 +1,7 @@
 import os
 import pdb
 import numpy as np
-from base import EEGDataset
+from batcher.base import EEGDataset
 from scipy.io import loadmat
 from scipy.signal import butter, filtfilt
 
