@@ -183,7 +183,6 @@ def train(config: Dict = None) -> Trainer:
 
         validation_dataset = test_dataset
         test_dataset = train_dataset
-        pass
 
     else:
         root_path = config["train_data_path"]
