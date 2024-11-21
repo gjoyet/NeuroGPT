@@ -137,31 +137,33 @@ def train(config: Dict = None) -> Trainer:
         manual_seed(config["seed"])
 
     # handles the input part, which are the output from encoder.
-    if config["training_style"] == 'decoding':
-        downstream_path = config["dst_data_path"]
 
-        # @Guillaume: change indexing below (from 0:18 to 1:19) to ignore file '.DS_Store' when running locally
-        train_folds, test_folds = cv_split_bci(sorted(os.listdir(downstream_path))[:18])
-        train_files = train_folds[config['fold_i']]
-        test_files = test_folds[config['fold_i']]
+    # TODO: check where config["training_style"] is used and see if I can just add a new training style.
+    # if config["training_style"] == 'decoding':  # decoding motion imagery
+    #     downstream_path = config["dst_data_path"]
+    #
+    #     # @Guillaume: change indexing below (from 0:18 to 1:19) to ignore file '.DS_Store' when running locally
+    #     train_folds, test_folds = cv_split_bci(sorted(os.listdir(downstream_path))[:18])
+    #     train_files = train_folds[config['fold_i']]
+    #     test_files = test_folds[config['fold_i']]
+    #
+    #     train_dataset = MotorImageryDataset(train_files, sample_keys=[
+    #         'inputs',
+    #         'attention_mask'
+    #     ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
+    #                                         root_path=downstream_path, gpt_only=not config["use_encoder"])
+    #     # pdb.set_trace()
+    #
+    #     test_dataset = MotorImageryDataset(test_files, sample_keys=[
+    #         'inputs',
+    #         'attention_mask'
+    #     ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
+    #                                        root_path=downstream_path, gpt_only=not config["use_encoder"])
+    #
+    #     validation_dataset = test_dataset
+    #     test_dataset = train_dataset
 
-        train_dataset = MotorImageryDataset(train_files, sample_keys=[
-            'inputs',
-            'attention_mask'
-        ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
-                                            root_path=downstream_path, gpt_only=not config["use_encoder"])
-        # pdb.set_trace()
-
-        test_dataset = MotorImageryDataset(test_files, sample_keys=[
-            'inputs',
-            'attention_mask'
-        ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
-                                           root_path=downstream_path, gpt_only=not config["use_encoder"])
-
-        validation_dataset = test_dataset
-        test_dataset = train_dataset
-
-    elif config["training_style"] == 'decoding_CHB':
+    if config["training_style"] == 'decoding':  # decoding 2AFC
         # For now, splits train/test set across all subjects.
         # Could be modified to include subjects only in one of both sets.
         downstream_path = config["dst_data_path"]
