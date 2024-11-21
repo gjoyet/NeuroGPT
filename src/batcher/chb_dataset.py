@@ -11,9 +11,7 @@ class CHBDataset(EEGDataset):
         total_num = []
         for fn in self.filenames:
             data = np.load(fn, mmap_mode='r')
-            # I discard the data before stimulus onset (1000ms, data is downsampled to 250 Hz).
-            # Leftover sequence is 312 timesteps long (relevant for hyperparameters chunk_len, num_chunks).
-            trials_all.append(data['epochs'][:, :, 250:])
+            trials_all.append(data['epochs'][:, :, 1251:])
             labels_all.extend(data['labels'])
             total_num.append(len(data['labels']))
 

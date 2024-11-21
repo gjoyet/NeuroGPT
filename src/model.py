@@ -68,6 +68,7 @@ class Model(torch.nn.Module):
         for k in self.state_dict():
             
             if k in pretrained:
+                # TODO: breakpoint here if you want to see model structure.
                 assert pretrained[k].shape == self.state_dict()[k].shape,\
                     f'{k} shape mismatch between pretrained model and current model '+\
                     f'{pretrained[k].shape} vs {self.state_dict()[k].shape}'
