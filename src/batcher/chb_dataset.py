@@ -19,7 +19,7 @@ class CHBDataset(EEGDataset):
         self.labels_string2int = {'left': 0, 'right': 1}
         self.Fs = 250  # 250Hz from original paper
 
-        self.trials = np.vstack(trials_all)
+        self.trials = self.normalize(np.vstack(trials_all))
         self.labels = np.array(labels_all)
         self.num_trials_per_sub = total_num
 
