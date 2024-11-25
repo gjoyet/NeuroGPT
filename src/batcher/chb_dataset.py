@@ -11,7 +11,7 @@ class CHBDataset(EEGDataset):
         total_num = []
         for fn in self.filenames:
             data = np.load(fn, mmap_mode='r')
-            trials_all.append(data['epochs'][:, :, 1251:])
+            trials_all.append(data['epochs'][:, :, 1251:2251])
             labels_all.extend(data['labels'])
             total_num.append(len(data['labels']))
 
