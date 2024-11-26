@@ -64,7 +64,7 @@ class MotorImageryDataset(EEGDataset):
                 start = events_position[0, index]
                 stop = start + events_duration[0, index]
                 trial = raw[:22, start+500 : stop-375]
-                #add band-pass filter
+                # add band-pass filter
                 # self.bandpass_filter(trial, lowcut=4, highcut=40, fs=250, order=5)
                 trials.append(trial)
             except:
