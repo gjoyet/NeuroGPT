@@ -1,3 +1,5 @@
+import os
+
 import h5py
 import numpy as np
 from batcher.base import EEGDataset
@@ -32,12 +34,12 @@ from batcher.base import EEGDataset
 #         return self.preprocess_sample(self.trials[idx], self.num_chunks, self.labels[idx])
 
 
-# hdf5 Dataset
+# hdf5 Dataset (does not work because hdf5 objects cannot be pickled).
 class CHBDataset(EEGDataset):
     def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", gpt_only=True):
         super().__init__(filenames, sample_keys, chunk_len, num_chunks, ovlp, root_path=root_path, gpt_only=gpt_only)
 
-        self.files = [h5py.File(fn, 'r') for fn in filenames]
+        self.files = [h5py.File(os.path.join('../../drive/My Drive/Colab Notebooks/Data/neurogpt_training_data_1000Hz_hdf5', fn), 'r') for fn in filenames]
         self.num_trials_per_sub = [len(f['labels']) for f in self.files]
         self.cumnum_trials = np.cumsum([0] + self.num_trials_per_sub)
 
@@ -53,7 +55,7 @@ class CHBDataset(EEGDataset):
         sample_index = index - np.where(self.cumnum_trials <= index, self.cumnum_trials, 0).max()
 
         # Calculate the result
-        trial = self.files[file_index]['epochs'][sample_index, ...]
+        trial = self.files[file_index]['epochs'][sample_index, :, 1251:2251]
         label = self.files[file_index]['labels'][sample_index, ...]
 
         return self.preprocess_sample(np.array(trial), self.num_chunks, np.array(label))
