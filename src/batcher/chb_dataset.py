@@ -14,7 +14,7 @@ from batcher.base import EEGDataset
 #         labels_all = []
 #         total_num = []
 #         for fn in self.filenames:
-#             data = np.load(fn, mmap_mode='r')
+#             data = np.load(os.path.join(root_path, fn), mmap_mode='r')  # also works with just np.load(fn, ...)
 #             trials_all.append(data['epochs'][:, :, 1251:2251])
 #             labels_all.extend(data['labels'])
 #             total_num.append(len(data['labels']))
@@ -42,6 +42,11 @@ class CHBDataset(EEGDataset):
         self.files = [h5py.File(os.path.join(root_path, fn), 'r') for fn in filenames]
         self.num_trials_per_sub = [len(f['labels']) for f in self.files]
         self.cumnum_trials = np.cumsum([0] + self.num_trials_per_sub)
+
+        all_labels = []
+        for f in self.files:
+            all_labels.extend(f['labels'])
+        print('\nOverall label mean: {}\nTotal number of samples: {}'.format(np.mean(all_labels), sum(self.num_trials_per_sub)))
 
         # Choices
         self.labels_string2int = {'left': 0, 'right': 1}
