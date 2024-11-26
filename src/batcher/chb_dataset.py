@@ -36,10 +36,10 @@ from batcher.base import EEGDataset
 
 # hdf5 Dataset (does not work because hdf5 objects cannot be pickled).
 class CHBDataset(EEGDataset):
-    def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", gpt_only=True):
+    def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", gpt_only=True, ):
         super().__init__(filenames, sample_keys, chunk_len, num_chunks, ovlp, root_path=root_path, gpt_only=gpt_only)
 
-        self.files = [h5py.File(os.path.join('../../drive/My Drive/Colab Notebooks/Data/neurogpt_training_data_1000Hz_hdf5', fn), 'r') for fn in filenames]
+        self.files = [h5py.File(os.path.join(root_path, fn), 'r') for fn in filenames]
         self.num_trials_per_sub = [len(f['labels']) for f in self.files]
         self.cumnum_trials = np.cumsum([0] + self.num_trials_per_sub)
 
