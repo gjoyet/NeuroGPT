@@ -64,11 +64,20 @@ class Model(torch.nn.Module):
 
         else:
             pretrained = torch.load(pretrained_path, map_location=torch.device('cpu'))
-        
+
+        # @Guillaume: at the moment, I just delete all pre-trained layers that depend on chunk size.
+        del pretrained['embedder.msk_embed']
+        del pretrained['embedder.cls_embed']
+        del pretrained['embedder.embed_model.model.0.weight']
+        del pretrained['embedder.embed_model.model.0.bias']
+        del pretrained['unembedder.model.0.weight']
+        del pretrained['unembedder.model.0.bias']
+
         for k in self.state_dict():
             
             if k in pretrained:
                 # TODO: breakpoint here if you want to see model structure.
+                # This is probably the place where I could change the size of the embedder.
                 assert pretrained[k].shape == self.state_dict()[k].shape,\
                     f'{k} shape mismatch between pretrained model and current model '+\
                     f'{pretrained[k].shape} vs {self.state_dict()[k].shape}'

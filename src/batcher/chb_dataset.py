@@ -6,37 +6,37 @@ from batcher.base import EEGDataset
 
 
 # npz Dataset
-# class CHBDataset(EEGDataset):
-#     def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", gpt_only=True):
-#         super().__init__(filenames, sample_keys, chunk_len, num_chunks, ovlp, root_path=root_path, gpt_only=gpt_only)
-#
-#         trials_all = []
-#         labels_all = []
-#         total_num = []
-#         for fn in self.filenames:
-#             data = np.load(os.path.join(root_path, fn), mmap_mode='r')  # also works with just np.load(fn, ...)
-#             trials_all.append(data['epochs'][:, :, 1251:2251])
-#             labels_all.extend(data['labels'])
-#             total_num.append(len(data['labels']))
-#
-#         # Choices
-#         self.labels_string2int = {'left': 0, 'right': 1}
-#         self.Fs = 1000  # 250Hz from original paper
-#
-#         self.trials = self.normalize(np.vstack(trials_all))
-#         self.labels = np.array(labels_all)
-#         self.num_trials_per_sub = total_num
-#
-#     def __len__(self):
-#         return sum(self.num_trials_per_sub)
-#
-#     def __getitem__(self, idx):
-#         return self.preprocess_sample(self.trials[idx], self.num_chunks, self.labels[idx])
+class CHBDataset_NPZ(EEGDataset):
+    def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", gpt_only=True):
+        super().__init__(filenames, sample_keys, chunk_len, num_chunks, ovlp, root_path=root_path, gpt_only=gpt_only)
+
+        trials_all = []
+        labels_all = []
+        total_num = []
+        for fn in self.filenames:
+            data = np.load(os.path.join(root_path, fn), mmap_mode='r')  # also works with just np.load(fn, ...)
+            trials_all.append(data['epochs'][:, :, 1251:2251])
+            labels_all.extend(data['labels'])
+            total_num.append(len(data['labels']))
+
+        # Choices
+        self.labels_string2int = {'left': 0, 'right': 1}
+        self.Fs = 1000  # 250Hz from original paper
+
+        self.trials = self.normalize(np.vstack(trials_all))
+        self.labels = np.array(labels_all)
+        self.num_trials_per_sub = total_num
+
+    def __len__(self):
+        return sum(self.num_trials_per_sub)
+
+    def __getitem__(self, idx):
+        return self.preprocess_sample(self.trials[idx], self.num_chunks, self.labels[idx])
 
 
 # hdf5 Dataset (does not work because hdf5 objects cannot be pickled).
-class CHBDataset(EEGDataset):
-    def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", gpt_only=True, ):
+class CHBDataset_HDF5(EEGDataset):
+    def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", gpt_only=True):
         super().__init__(filenames, sample_keys, chunk_len, num_chunks, ovlp, root_path=root_path, gpt_only=gpt_only)
 
         self.files = [h5py.File(os.path.join(root_path, fn), 'r') for fn in filenames]
@@ -46,7 +46,7 @@ class CHBDataset(EEGDataset):
         all_labels = []
         for f in self.files:
             all_labels.extend(f['labels'])
-        print('\nOverall label mean: {}\nTotal number of samples: {}'.format(np.mean(all_labels), sum(self.num_trials_per_sub)))
+        print('\n@Guillaume\nOverall label mean: {}\nTotal number of samples: {}\n'.format(np.mean(all_labels), sum(self.num_trials_per_sub)))
 
         # Choices
         self.labels_string2int = {'left': 0, 'right': 1}

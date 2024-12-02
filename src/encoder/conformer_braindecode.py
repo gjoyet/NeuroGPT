@@ -148,6 +148,7 @@ class EEGConformer(EEGModuleMixin, nn.Module):
         self.is_decoding_mode = is_decoding_mode
         if self.is_decoding_mode:
             print("FC Layer for Classification created.")
+            # TODO: probably tweak around here to classify each chunk separately.
             self.fc = _FullyConnected(
                 final_fc_length=final_fc_length)
 

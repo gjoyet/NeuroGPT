@@ -29,7 +29,7 @@ src/model: Build full model from components (ie., embedder,
     decoder, unembedder). See make_model() below for details.
 """
 from batcher.downstream_dataset import MotorImageryDataset
-from batcher.chb_dataset import CHBDataset
+from batcher.chb_dataset import CHBDataset_NPZ, CHBDataset_HDF5
 import torch
 import os
 import argparse
@@ -167,11 +167,20 @@ def train(config: Dict = None) -> Trainer:
         # For now, splits train/test set across all subjects.
         # Could be modified to include subjects only in one of both sets.
         downstream_path = config["dst_data_path"]
-        dataset = CHBDataset(sorted(os.listdir(downstream_path)), sample_keys=[
-            'inputs',
-            'attention_mask'
-        ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
-                                      root_path=downstream_path, gpt_only=not config["use_encoder"])
+        if downstream_path.endswith('npz/'):
+            dataset = CHBDataset_NPZ(sorted(os.listdir(downstream_path)), sample_keys=[
+                'inputs',
+                'attention_mask'
+            ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
+                                          root_path=downstream_path, gpt_only=not config["use_encoder"])
+        elif downstream_path.endswith('hdf5/'):
+            dataset = CHBDataset_HDF5(sorted(os.listdir(downstream_path)), sample_keys=[
+                'inputs',
+                'attention_mask'
+            ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
+                                          root_path=downstream_path, gpt_only=not config["use_encoder"])
+        else:
+            raise ImportError('Issue with loading data.')
 
         # Split lengths (e.g., 80% train, 20% test)
         split = 0.8
@@ -295,6 +304,7 @@ def make_model(model_config: Dict = None):
         encoder = EEGConformer(n_outputs=model_config["num_decoding_classes"], n_chans=22,
                                n_times=model_config['chunk_len'], ch_pos=chann_coords,
                                is_decoding_mode=model_config["ft_only_encoder"])
+        # TODO: understand that (what is parcellation_dim? where is it used?)
         # calculates the output dimension of the encoder, which is the output of transformer layer.
         model_config["parcellation_dim"] = ((model_config['chunk_len'] - model_config['filter_time_length'] + 1 -
                                              model_config['pool_time_length']) // model_config['stride_avg_pool'] + 1) * \
@@ -988,6 +998,7 @@ def get_args() -> argparse.ArgumentParser:
         help='whether to use encoder or not'
     )
 
+    # TODO: these are the parameters for the encoder. Filter/pool sizes should maybe be reduced for smaller chunks.
     parser.add_argument('--filter-time-length', metavar='INT', default=25, type=int,
                         help='length of the temporal filter (default: 25)')
     parser.add_argument('--pool-time-length', metavar='INT', default=75, type=int,
