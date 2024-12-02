@@ -66,12 +66,12 @@ class Model(torch.nn.Module):
             pretrained = torch.load(pretrained_path, map_location=torch.device('cpu'))
 
         # @Guillaume: layers that depend on chunk length:
-        # del pretrained['embedder.msk_embed']
-        # del pretrained['embedder.cls_embed']
-        # del pretrained['embedder.embed_model.model.0.weight']
-        # del pretrained['embedder.embed_model.model.0.bias']
-        # del pretrained['unembedder.model.0.weight']
-        # del pretrained['unembedder.model.0.bias']
+        del pretrained['embedder.msk_embed']
+        del pretrained['embedder.cls_embed']
+        del pretrained['embedder.embed_model.model.0.weight']
+        del pretrained['embedder.embed_model.model.0.bias']
+        del pretrained['unembedder.model.0.weight']
+        del pretrained['unembedder.model.0.bias']
 
         for k in self.state_dict():
             
