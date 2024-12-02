@@ -303,7 +303,7 @@ def make_model(model_config: Dict = None):
 
         encoder = EEGConformer(n_outputs=model_config["num_decoding_classes"], n_chans=22,
                                n_times=model_config['chunk_len'], ch_pos=chann_coords,
-                               is_decoding_mode=model_config["ft_only_encoder"])
+                               is_decoding_mode=model_config["ft_only_encoder"], final_fc_length=80)
         # TODO: understand that (what is parcellation_dim? where is it used?)
         # calculates the output dimension of the encoder, which is the output of transformer layer.
         model_config["parcellation_dim"] = ((model_config['chunk_len'] - model_config['filter_time_length'] + 1 -
@@ -998,7 +998,7 @@ def get_args() -> argparse.ArgumentParser:
         help='whether to use encoder or not'
     )
 
-    # TODO: these are the parameters for the encoder. Filter/pool sizes should maybe be reduced for smaller chunks.
+    # @Guillaume: here are the parameters for the encoder. Filter/pool sizes should maybe be reduced for smaller chunks.
     parser.add_argument('--filter-time-length', metavar='INT', default=25, type=int,
                         help='length of the temporal filter (default: 25)')
     parser.add_argument('--pool-time-length', metavar='INT', default=75, type=int,
