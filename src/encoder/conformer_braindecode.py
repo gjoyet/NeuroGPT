@@ -98,6 +98,7 @@ class EEGConformer(EEGModuleMixin, nn.Module):
             add_log_softmax=True,
             ch_pos=None,
             is_decoding_mode=False,
+            num_chunks=2,
     ):
         n_outputs, n_chans, n_times = deprecated_args(
             self,
@@ -125,6 +126,8 @@ class EEGConformer(EEGModuleMixin, nn.Module):
             warnings.warn("This model has only been tested on no more " +
                           "than 64 channels. no guarantee to work with " +
                           "more channels.", UserWarning)
+
+        self.num_chunks = num_chunks
 
         self.patch_embedding = _PatchEmbedding(
             n_filters_time=n_filters_time,
@@ -385,7 +388,7 @@ class _FullyConnected(nn.Module):
 
         super().__init__()
         self.fc = nn.Sequential(
-            nn.Linear(final_fc_length*2, out_channels),
+            nn.Linear(final_fc_length*self.num_chunks, out_channels),
             nn.ELU(),
             nn.Dropout(drop_prob_1),
             nn.Linear(out_channels, hidden_channels),
@@ -394,7 +397,7 @@ class _FullyConnected(nn.Module):
         )
 
     def forward(self, x):
-        x = x.contiguous().view(x.size(0)//2, -1)
+        x = x.contiguous().view(x.size(0)//self.num_chunks, -1)
         out = self.fc(x)
         return out
 
