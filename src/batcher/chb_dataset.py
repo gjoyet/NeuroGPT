@@ -15,7 +15,7 @@ class CHBDataset_NPZ(EEGDataset):
         total_num = []
         for fn in self.filenames:
             data = np.load(os.path.join(root_path, fn), mmap_mode='r')  # also works with just np.load(fn, ...)
-            trials_all.append(data['epochs'][:, :, 1251:2251])
+            trials_all.append(data['epochs'][:, :, 551:2251])
             labels_all.extend(data['labels'])
             total_num.append(len(data['labels']))
 
@@ -60,7 +60,7 @@ class CHBDataset_HDF5(EEGDataset):
         sample_index = index - np.where(self.cumnum_trials <= index, self.cumnum_trials, 0).max()
 
         # Calculate the result
-        trial = self.files[file_index]['epochs'][sample_index, :, 1251:2251]
+        trial = self.files[file_index]['epochs'][sample_index, :, 551:2251]
         label = self.files[file_index]['labels'][sample_index, ...]
 
         return self.preprocess_sample(np.array(trial), self.num_chunks, np.array(label))
