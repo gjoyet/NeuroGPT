@@ -127,8 +127,6 @@ class EEGConformer(EEGModuleMixin, nn.Module):
                           "than 64 channels. no guarantee to work with " +
                           "more channels.", UserWarning)
 
-        self.num_chunks = num_chunks
-
         self.patch_embedding = _PatchEmbedding(
             n_filters_time=n_filters_time,
             filter_time_length=filter_time_length,
@@ -153,7 +151,8 @@ class EEGConformer(EEGModuleMixin, nn.Module):
             print("FC Layer for Classification created.")
             # TODO: probably tweak around here to classify each chunk separately.
             self.fc = _FullyConnected(
-                final_fc_length=final_fc_length)
+                final_fc_length=final_fc_length,
+                num_chunks=self.num_chunks)
 
             self.final_layer = _FinalLayer(n_classes=self.n_outputs,
                                            return_features=return_features,
@@ -363,7 +362,7 @@ class _TransformerEncoder(nn.Sequential):
 class _FullyConnected(nn.Module):
     def __init__(self, final_fc_length,
                  drop_prob_1=0.5, drop_prob_2=0.3, out_channels=256,
-                 hidden_channels=32):
+                 hidden_channels=32, num_chunks=2):
         """Fully-connected layer for the transformer encoder.
 
         Parameters
@@ -387,6 +386,7 @@ class _FullyConnected(nn.Module):
         """
 
         super().__init__()
+        self.num_chunks = num_chunks
         self.fc = nn.Sequential(
             nn.Linear(final_fc_length*self.num_chunks, out_channels),
             nn.ELU(),
