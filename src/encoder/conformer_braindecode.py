@@ -152,7 +152,7 @@ class EEGConformer(EEGModuleMixin, nn.Module):
             # TODO: probably tweak around here to classify each chunk separately.
             self.fc = _FullyConnected(
                 final_fc_length=final_fc_length,
-                num_chunks=self.num_chunks)
+                num_chunks=num_chunks)
 
             self.final_layer = _FinalLayer(n_classes=self.n_outputs,
                                            return_features=return_features,
