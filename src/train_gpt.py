@@ -303,7 +303,8 @@ def make_model(model_config: Dict = None):
 
         encoder = EEGConformer(n_outputs=model_config["num_decoding_classes"], n_chans=22,
                                n_times=model_config['chunk_len'], ch_pos=chann_coords,
-                               is_decoding_mode=model_config["ft_only_encoder"])
+                               is_decoding_mode=model_config["ft_only_encoder"],
+                               num_chunks=model_config['num_chunks'])
         # TODO: understand that (what is parcellation_dim? where is it used?)
         # calculates the output dimension of the encoder, which is the output of transformer layer.
         model_config["parcellation_dim"] = ((model_config['chunk_len'] - model_config['filter_time_length'] + 1 -
@@ -352,6 +353,7 @@ def make_model(model_config: Dict = None):
         decoder=decoder,
         unembedder=unembedder
     )
+    model = model.to(torch.device("cuda" if torch.cuda.is_available() else "mps"))
 
     if model_config["ft_only_encoder"]:
         model.switch_ft_mode(ft_encoder_only=True)

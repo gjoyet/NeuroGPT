@@ -174,12 +174,27 @@ class BaseEmbedder(torch.nn.Module):
         **kwargs
         ) -> Dict[str, torch.tensor]:
         # pdb.set_trace()
-        return {
-            'decoding_loss': self.xe_loss(
-                input=decoding_logits,
-                target=labels.to(dtype=torch.long)
-            )
-        }
+        pass
+        if len(decoding_logits.size()) == 2:
+            return {
+                'decoding_loss': self.xe_loss(
+                    input=decoding_logits,
+                    target=labels.to(dtype=torch.long)
+                )
+            }
+        elif len(decoding_logits.size()) == 3:
+            chunks = decoding_logits.size()[1]
+            test1 = decoding_logits.view(-1, 2),
+            test2 = labels.repeat(chunks).to(dtype=torch.long)
+            pass
+            return {
+                'decoding_loss': self.xe_loss(
+                    input=decoding_logits.view(-1, 2),
+                    target=labels.repeat(chunks).to(dtype=torch.long)
+                )
+            }
+        else:
+            raise ValueError('Incorrect output shape.')
     
     def reconstruction_loss(
         self,

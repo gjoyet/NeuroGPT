@@ -63,7 +63,7 @@ class Model(torch.nn.Module):
             pretrained = torch.load(pretrained_path)
 
         else:
-            pretrained = torch.load(pretrained_path, map_location=torch.device('cpu'))
+            pretrained = torch.load(pretrained_path, map_location=torch.device('mps'))
 
         # @Guillaume: layers that depend on chunk length:
         # del pretrained['embedder.msk_embed']

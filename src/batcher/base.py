@@ -38,7 +38,9 @@ class EEGDataset(Dataset):
         else:
             self.filenames = [root_path + fn for fn in filenames if os.path.isfile(root_path+fn)]
             self.root_path = root_path
-            
+
+        # TODO: change back to loading all files when finished testing
+        self.filenames = self.filenames[:2]
         print("Number of subjects loaded: ", len(self.filenames))
         # self.data = data_all
         self.chunk_len = chunk_len

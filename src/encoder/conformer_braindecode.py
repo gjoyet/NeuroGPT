@@ -10,6 +10,7 @@ import warnings
 
 from encoder.base import EEGModuleMixin, deprecated_args
 
+
 class EEGConformer(EEGModuleMixin, nn.Module):
     """EEG Conformer.
 
@@ -98,6 +99,7 @@ class EEGConformer(EEGModuleMixin, nn.Module):
             add_log_softmax=True,
             ch_pos=None,
             is_decoding_mode=False,
+            num_chunks=2
     ):
         n_outputs, n_chans, n_times = deprecated_args(
             self,
@@ -143,22 +145,22 @@ class EEGConformer(EEGModuleMixin, nn.Module):
             emb_size=n_filters_time,
             att_heads=att_heads,
             att_drop=att_drop_prob)
-            
+
         self.ch_pos = ch_pos
         self.is_decoding_mode = is_decoding_mode
         if self.is_decoding_mode:
             print("FC Layer for Classification created.")
             # TODO: probably tweak around here to classify each chunk separately.
-            self.fc = _FullyConnected(
-                final_fc_length=final_fc_length)
+            self.fcs = nn.ModuleList(_FullyConnected(final_fc_length=final_fc_length) for _ in range(num_chunks))
 
-            self.final_layer = _FinalLayer(n_classes=self.n_outputs,
-                                           return_features=return_features,
-                                           add_log_softmax=self.add_log_softmax)
+            self.final_layers = nn.ModuleList(_FinalLayer(n_classes=self.n_outputs,
+                                                          return_features=return_features,
+                                                          add_log_softmax=self.add_log_softmax) for _ in
+                                              range(num_chunks))
 
     def forward(self, x: Tensor) -> Tensor:
         batch, chunks, chann, time = x.size()
-        x = x.contiguous().view(batch*chunks, chann, time)
+        x = x.contiguous().view(batch * chunks, chann, time)
         # x = x.permute(0, 2, 1, 3).contiguous().view(batch, chann, -1)
 
         x = torch.unsqueeze(x, dim=1)  # add one extra dimension
@@ -166,9 +168,11 @@ class EEGConformer(EEGModuleMixin, nn.Module):
         x = self.transformer(x)
 
         if self.is_decoding_mode:
+            x = x.view(batch, chunks, -1)
+
             # pdb.set_trace()
-            x = self.fc(x)
-            x = self.final_layer(x)
+            x = torch.cat([self.fcs[i](x[:, i, :]).unsqueeze(1) for i in range(chunks)], dim=1)
+            x = torch.cat([self.final_layers[i](x[:, i, :]).unsqueeze(1) for i in range(chunks)], dim=1)
         return x
 
     def get_fc_size(self):
@@ -240,13 +244,13 @@ class _PatchEmbedding(nn.Module):
             nn.Conv2d(
                 n_filters_time, n_filters_time, (1, 1), stride=(1, 1)
             ),  # transpose, conv could enhance fiting ability slightly
-            Rearrange("b d_model 1 seq -> b seq d_model"), # no need, because it will be flattened
+            Rearrange("b d_model 1 seq -> b seq d_model"),  # no need, because it will be flattened
         )
 
     def forward(self, x: Tensor) -> Tensor:
         x = self.shallownet(x)
-        x = self.projection(x) 
-        
+        x = self.projection(x)
+
         return x
 
 
@@ -385,16 +389,16 @@ class _FullyConnected(nn.Module):
 
         super().__init__()
         self.fc = nn.Sequential(
-            nn.Linear(final_fc_length*2, out_channels),
+            nn.Linear(final_fc_length, out_channels),
             nn.ELU(),
             nn.Dropout(drop_prob_1),
             nn.Linear(out_channels, hidden_channels),
             nn.ELU(),
             # nn.Dropout(drop_prob_2),
-        )
+        ) # .to(torch.device("cuda" if torch.cuda.is_available() else "mps"))
 
     def forward(self, x):
-        x = x.contiguous().view(x.size(0)//2, -1)
+        x = x.contiguous().view(x.size(0), -1)
         out = self.fc(x)
         return out
 
