@@ -43,7 +43,7 @@ class EEGDataset(Dataset):
             # choose a random subset of subjects of size num_subjects
             idxs = np.random.choice(len(self.filenames), size=num_subjects, replace=False)
             idxs = np.sort(idxs)
-            self.filenames = self.filenames[idxs]
+            self.filenames = [self.filenames[i] for i in idxs]
         print("Number of subjects loaded: ", len(self.filenames))
         # self.data = data_all
         self.chunk_len = chunk_len
