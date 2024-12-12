@@ -172,13 +172,15 @@ def train(config: Dict = None) -> Trainer:
                 'inputs',
                 'attention_mask'
             ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
-                                     root_path=downstream_path, gpt_only=not config["use_encoder"])
+                                     root_path=downstream_path, gpt_only=not config["use_encoder"],
+                                     num_subjects=config["load_n_subjects"])
         elif downstream_path.endswith('hdf5/'):
             dataset = CHBDataset_HDF5(sorted(os.listdir(downstream_path)), sample_keys=[
                 'inputs',
                 'attention_mask'
             ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
-                                      root_path=downstream_path, gpt_only=not config["use_encoder"])
+                                      root_path=downstream_path, gpt_only=not config["use_encoder"],
+                                      num_subjects=config["load_n_subjects"])
         else:
             raise ImportError('Issue with loading data.')
 
@@ -1023,6 +1025,11 @@ def get_args() -> argparse.ArgumentParser:
                         type=str,
                         help='finetune with only encoder or not '
                              '(default: False) '
+                        )
+
+    parser.add_argument('--load-n-subjects', metavar='INT', default=-1, type=int,
+                        help='number of subjects to load (-1 loads all subjects) '
+                             '(default: -1) '
                         )
 
     return parser

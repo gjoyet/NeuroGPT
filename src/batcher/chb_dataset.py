@@ -7,8 +7,8 @@ from batcher.base import EEGDataset
 
 # npz Dataset
 class CHBDataset_NPZ(EEGDataset):
-    def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", gpt_only=True):
-        super().__init__(filenames, sample_keys, chunk_len, num_chunks, ovlp, root_path=root_path, gpt_only=gpt_only)
+    def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", gpt_only=True, num_subjects=-1):
+        super().__init__(filenames, sample_keys, chunk_len, num_chunks, ovlp, root_path=root_path, gpt_only=gpt_only, num_subjects=num_subjects)
 
         trials_all = []
         labels_all = []
@@ -36,8 +36,8 @@ class CHBDataset_NPZ(EEGDataset):
 
 # hdf5 Dataset (does not work because hdf5 objects cannot be pickled).
 class CHBDataset_HDF5(EEGDataset):
-    def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", gpt_only=True):
-        super().__init__(filenames, sample_keys, chunk_len, num_chunks, ovlp, root_path=root_path, gpt_only=gpt_only)
+    def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", gpt_only=True, num_subjects=-1):
+        super().__init__(filenames, sample_keys, chunk_len, num_chunks, ovlp, root_path=root_path, gpt_only=gpt_only, num_subjects=num_subjects)
 
         self.files = [h5py.File(os.path.join(root_path, fn), 'r') for fn in filenames]
         self.num_trials_per_sub = [len(f['labels']) for f in self.files]

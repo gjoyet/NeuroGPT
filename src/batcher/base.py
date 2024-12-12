@@ -32,14 +32,18 @@ def _pad_seq_right_to_n(
     )
 
 class EEGDataset(Dataset):
-    def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", population_mean=0, population_std=1, gpt_only=False, normalization=True, start_samp_pnt=-1):
+    def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", population_mean=0, population_std=1, gpt_only=False, normalization=True, start_samp_pnt=-1, num_subjects=-1):
         if root_path == "":
             self.filenames = filenames
         else:
             self.filenames = [root_path + fn for fn in filenames if os.path.isfile(root_path+fn)]
             self.root_path = root_path
 
-        self.filenames = self.filenames[:2]
+        if num_subjects != -1:
+            # choose a random subset of subjects of size num_subjects
+            idxs = np.random.choice(len(self.filenames), size=num_subjects, replace=False)
+            idxs = np.sort(idxs)
+            self.filenames = self.filenames[idxs]
         print("Number of subjects loaded: ", len(self.filenames))
         # self.data = data_all
         self.chunk_len = chunk_len
