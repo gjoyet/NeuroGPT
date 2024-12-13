@@ -388,7 +388,8 @@ class _FullyConnected(nn.Module):
         super().__init__()
         self.num_chunks = num_chunks
         self.fc = nn.Sequential(
-            nn.Linear(final_fc_length*self.num_chunks, out_channels),
+            # @Guillaume: nn.Linear(final_fc_length*self.num_chunks, out_channels) to decode whole trial at once.
+            nn.Linear(final_fc_length, out_channels),
             nn.ELU(),
             nn.Dropout(drop_prob_1),
             nn.Linear(out_channels, hidden_channels),
@@ -397,7 +398,8 @@ class _FullyConnected(nn.Module):
         )
 
     def forward(self, x):
-        x = x.contiguous().view(x.size(0)//self.num_chunks, -1)
+        # @Guillaume: x = x.contiguous().view(x.size(0)//self.num_chunks, -1) to decode whole trial at once.
+        x = x.contiguous().view(x.size(0), -1)
         out = self.fc(x)
         return out
 
