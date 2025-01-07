@@ -60,7 +60,7 @@ class CHBDataset_HDF5(EEGDataset):
         sample_index = index - np.where(self.cumnum_trials <= index, self.cumnum_trials, 0).max()
 
         # Calculate the result
-        trial = self.files[file_index]['epochs'][sample_index, :, 1751:2251]
+        trial = self.files[file_index]['epochs'][sample_index, :, 551:1051]
         label = self.files[file_index]['labels'][sample_index, ...]
 
         return self.preprocess_sample(np.array(trial), self.num_chunks, np.array(label))
