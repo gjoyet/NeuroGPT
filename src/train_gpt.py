@@ -180,7 +180,7 @@ def train(config: Dict = None) -> Trainer:
                 'attention_mask'
             ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
                                       root_path=downstream_path, gpt_only=not config["use_encoder"],
-                                      num_subjects=config["load_n_subjects"])
+                                      num_subjects=config["load_n_subjects"], first_chunk_idx=config["first_chunk_idx"])
         else:
             raise ImportError('Issue with loading data.')
 
@@ -1030,6 +1030,11 @@ def get_args() -> argparse.ArgumentParser:
     parser.add_argument('--load-n-subjects', metavar='INT', default=-1, type=int,
                         help='number of subjects to load (-1 loads all subjects) '
                              '(default: -1) '
+                        )
+
+    parser.add_argument('--first-chunk-idx', metavar='INT', default=501, type=int,
+                        help='index in data of the start of the first chunk to be encoded '
+                             '(default: 501) '
                         )
 
     return parser
