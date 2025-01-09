@@ -173,7 +173,7 @@ def train(config: Dict = None) -> Trainer:
                 'attention_mask'
             ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
                                      root_path=downstream_path, gpt_only=not config["use_encoder"],
-                                     num_subjects=config["load_n_subjects"])
+                                     num_subjects=config["load_n_subjects"], first_chunk_idx=config["first_chunk_idx"])
         elif downstream_path.endswith('hdf5/'):
             dataset = CHBDataset_HDF5(sorted(os.listdir(downstream_path)), sample_keys=[
                 'inputs',
@@ -292,6 +292,8 @@ def train(config: Dict = None) -> Trainer:
             ),
             test_prediction.label_ids
         )
+
+    # TODO: probably here: add time-dependent evaluation, i.e. collect accuracies for each time-step separately.
 
     return trainer
 
