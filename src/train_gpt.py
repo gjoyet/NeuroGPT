@@ -293,7 +293,20 @@ def train(config: Dict = None) -> Trainer:
             test_prediction.label_ids
         )
 
-    # TODO: probably here: add time-dependent evaluation, i.e. collect accuracies for each time-step separately.
+        # TODO: probably here: add time-dependent evaluation, i.e. collect accuracies for each time-step separately.
+        # WARNING: in test_dataset, chunks are not ordered anymore. I think I need to change the way I load the data.
+        idxs = np.array(test_dataset.indices)
+        metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
+        for chunk in range(config["num_chunk"]):
+            idxs_select = idxs[idxs % chunk == 0]
+            test_prediction = trainer.predict(test_dataset[idxs_select])
+
+            metrics['chunk_position'].append(
+                config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
+            metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
+            metrics['n_samples'].append(len(idxs_select))
+
+        pd.DataFrame.from_dict(metrics).to_csv('time_dependent_test_metrics.csv')
 
     return trainer
 
