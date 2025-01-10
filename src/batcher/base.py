@@ -39,15 +39,15 @@ class EEGDataset(Dataset):
             self.filenames = [root_path + fn for fn in filenames if os.path.isfile(root_path+fn)]
             self.root_path = root_path
 
-        print("\nNumber of subjects loaded: ", len(self.filenames))
         if num_subjects != -1:
             # choose a random subset of subjects of size num_subjects
             idxs = np.random.choice(len(self.filenames), size=num_subjects, replace=False)
             idxs = np.sort(idxs)
             self.filenames = [self.filenames[i] for i in idxs]
-            if num_subjects == 1:
-                print('({})'.format(self.filenames[0].split('_')[0]))
 
+        print("\nNumber of subjects loaded: ", len(self.filenames))
+        if num_subjects == 1:
+            print('({})'.format(self.filenames[0].split('_')[0]))
 
         # self.data = data_all
         self.chunk_len = chunk_len
