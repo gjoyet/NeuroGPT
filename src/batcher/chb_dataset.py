@@ -6,6 +6,7 @@ from batcher.base import EEGDataset
 
 
 # npz Dataset
+# WARNING: most recent version only implemented for hdf5, NOT npz!
 class CHBDataset_NPZ(EEGDataset):
     def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", gpt_only=True,
                  num_subjects=-1, first_chunk_idx=501):
@@ -52,6 +53,7 @@ class CHBDataset_HDF5(EEGDataset):
         all_labels = []
         for f in self.files:
             all_labels.extend(f['labels'])
+        # TODO: adapt that
         print('\n@Guillaume\nOverall label mean: {}\nTotal number of samples: {}\n'.format(np.mean(all_labels),
                                                                                            sum(self.num_trials_per_sub)))
 
@@ -75,4 +77,4 @@ class CHBDataset_HDF5(EEGDataset):
         trial = self.files[file_index]['epochs'][sample_index, :, select:select+self.chunk_len]
         label = self.files[file_index]['labels'][sample_index, ...]
 
-        return self.preprocess_sample(np.array(trial), self.num_chunks, np.array(label))
+        return self.preprocess_sample(np.array(trial), 1, np.array(label))
