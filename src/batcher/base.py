@@ -47,7 +47,7 @@ class EEGDataset(Dataset):
 
         print("\nNumber of subjects loaded: ", len(self.filenames))
         if num_subjects == 1:
-            print('({})'.format(self.filenames[0].split('_')[0]))
+            print('({})'.format(self.filenames[0]))
 
         # self.data = data_all
         self.chunk_len = chunk_len
