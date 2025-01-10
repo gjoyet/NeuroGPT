@@ -54,8 +54,9 @@ class CHBDataset_HDF5(EEGDataset):
         for f in self.files:
             all_labels.extend(f['labels'])
         # TODO: adapt that
-        print('\n@Guillaume\nOverall label mean: {}\nTotal number of samples: {}\n'.format(np.mean(all_labels),
-                                                                                           sum(self.num_trials_per_sub)))
+        print('\n@Guillaume\nOverall label mean: {}\nTotal number of samples (i.e. number of trials): {}'.format(
+            np.mean(all_labels),
+            sum(self.num_trials_per_sub)))
 
         # Choices
         self.labels_string2int = {'left': 0, 'right': 1}
@@ -74,7 +75,7 @@ class CHBDataset_HDF5(EEGDataset):
 
         # Calculate the result
         select = self.first_chunk_idx + chunk_index * (self.chunk_len - self.ovlp)
-        trial = self.files[file_index]['epochs'][sample_index, :, select:select+self.chunk_len]
+        trial = self.files[file_index]['epochs'][sample_index, :, select:select + self.chunk_len]
         label = self.files[file_index]['labels'][sample_index, ...]
 
         return self.preprocess_sample(np.array(trial), 1, np.array(label))
