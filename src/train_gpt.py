@@ -297,7 +297,7 @@ def train(config: Dict = None) -> Trainer:
 
         # TODO: could I do time-dependent evaluation also during training (to have a history?)
         # WARNING: in test_dataset, chunks are not ordered anymore, which is why I need to select the correct indices.
-        idxs = np.array(test_dataset.indices)
+        idxs = np.array(test_dataset.indices, dtype=np.uint32)
         metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
         for chunk in range(config["num_chunks"]):
             idxs_select = idxs[idxs % config["num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
