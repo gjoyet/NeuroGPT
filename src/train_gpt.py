@@ -300,7 +300,7 @@ def train(config: Dict = None) -> Trainer:
         idxs = np.array(test_dataset.indices)
         metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
         for chunk in range(config["num_chunks"]):
-            idxs_select = idxs[idxs % chunk == 0]  # indices indicate which position the chunk is in the original trial
+            idxs_select = idxs[idxs % config["num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
             test_prediction = trainer.predict(test_dataset[idxs_select])
 
             metrics['chunk_position'].append(
