@@ -295,12 +295,12 @@ def train(config: Dict = None) -> Trainer:
             test_prediction.label_ids
         )
 
-        # TODO: probably here: add time-dependent evaluation, i.e. collect accuracies for each time-step separately.
-        # WARNING: in test_dataset, chunks are not ordered anymore. I think I need to change the way I load the data.
+        # TODO: could I do time-dependent evaluation also during training (to have a history?)
+        # WARNING: in test_dataset, chunks are not ordered anymore, which is why I need to select the correct indices.
         idxs = np.array(test_dataset.indices)
         metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
-        for chunk in range(config["num_chunk"]):
-            idxs_select = idxs[idxs % chunk == 0]
+        for chunk in range(config["num_chunks"]):
+            idxs_select = idxs[idxs % chunk == 0]  # indices indicate which position the chunk is in the original trial
             test_prediction = trainer.predict(test_dataset[idxs_select])
 
             metrics['chunk_position'].append(
