@@ -46,7 +46,7 @@ class CHBDataset_HDF5(EEGDataset):
         super().__init__(filenames, sample_keys, chunk_len, num_chunks, ovlp, root_path=root_path, gpt_only=gpt_only,
                          num_subjects=num_subjects)
 
-        self.files = [h5py.File(os.path.join(root_path, fn), 'r') for fn in self.filenames]
+        self.files = [h5py.File(fn, 'r') for fn in self.filenames]
         self.num_trials_per_sub = [len(f['labels']) for f in self.files]
         self.cumnum_trials = np.cumsum([0] + self.num_trials_per_sub)
 
