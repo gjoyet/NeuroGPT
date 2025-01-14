@@ -309,13 +309,17 @@ def train(config: Dict = None) -> Trainer:
             metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
             metrics['n_samples'].append(len(idxs_select))
 
+        output_path = os.path.join(
+                config["log_dir"],
+                'time_dependent_test_metrics.csv'
+            )
+
         pd.DataFrame.from_dict(
             metrics
         ).to_csv(
-            os.path.join(
-                config["log_dir"],
-                'time_dependent_test_metrics.csv'
-            ),
+            output_path,
+            mode='a',
+            header=not os.path.exists(output_path),
             index=False
         )
 
