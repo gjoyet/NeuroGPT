@@ -302,7 +302,7 @@ def train(config: Dict = None) -> Trainer:
         for chunk in range(config["num_chunks"]):
             idxs_select = idxs[idxs % config["num_chunks"] == chunk].astype(int)  # indices indicate the position of the chunk in the original trial
             print(type(idxs_select))
-            test_prediction = trainer.predict(test_dataset[list(idxs_select)])
+            test_prediction = trainer.predict(dataset[list(idxs_select)])
 
             metrics['chunk_position'].append(
                 config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
