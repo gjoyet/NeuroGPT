@@ -42,6 +42,7 @@ import pandas as pd
 import numpy as np
 from encoder.conformer_braindecode import EEGConformer
 from torch import manual_seed
+from torch.utils.data import random_split, Subset
 import sys
 
 from utils import cv_split_bci, read_threshold_sub
@@ -55,7 +56,6 @@ from embedder.make import make_embedder
 from trainer.make import make_trainer
 from trainer.base import Trainer
 from decoder.unembedder import make_unembedder
-from torch.utils.data import random_split
 
 os.environ["WANDB_DISABLED"] = "true"
 
@@ -163,6 +163,7 @@ def train(config: Dict = None) -> Trainer:
     #     validation_dataset = test_dataset
     #     test_dataset = train_dataset
 
+    dataset = None
     if config["training_style"] == 'decoding':  # decoding 2AFC
         # For now, splits train/test set across all subjects.
         # Could be modified to include subjects only in one of both sets.
@@ -297,27 +298,30 @@ def train(config: Dict = None) -> Trainer:
 
         # TODO: could I do time-dependent evaluation also during training (to have a history?)
         # WARNING: in test_dataset, chunks are not ordered anymore, which is why I need to select the correct indices.
-        idxs = np.array(test_dataset.indices)
-        metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
-        for chunk in range(config["num_chunks"]):
-            idxs_select = idxs[idxs % config["num_chunks"] == chunk].astype(int)  # indices indicate the position of the chunk in the original trial
-            print(type(idxs_select))
-            test_prediction = trainer.predict(dataset[list(idxs_select)])
+        if dataset is not None:
+            idxs = np.array(test_dataset.indices)
+            metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
+            for chunk in range(config["num_chunks"]):
+                idxs_select = idxs[idxs % config["num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
+                test_prediction = trainer.predict(Subset(dataset, idxs_select))
 
-            metrics['chunk_position'].append(
-                config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
-            metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
-            metrics['n_samples'].append(len(idxs_select))
+                metrics['chunk_position'].append(
+                    config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
+                metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
+                metrics['n_samples'].append(len(idxs_select))
 
-        pd.DataFrame.from_dict(
-            metrics
-        ).to_csv(
-            os.path.join(
-                config["log_dir"],
-                'time_dependent_test_metrics.csv'
-            ),
-            index=False
-        )
+            pd.DataFrame.from_dict(
+                metrics
+            ).to_csv(
+                os.path.join(
+                    config["log_dir"],
+                    'time_dependent_test_metrics.csv'
+                ),
+                index=False
+            )
+        else:
+            print("Original dataset containing chunk-position information not available anymore.",
+                  "Cannot perform time-dependent analysis.")
 
     return trainer
 
