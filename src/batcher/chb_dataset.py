@@ -40,6 +40,7 @@ class CHBDataset_NPZ(EEGDataset):
 
 
 # hdf5 Dataset (does not work because hdf5 objects cannot be pickled).
+# TODO: to increase usability, maybe change first_chunk_idx to stimulus_onset variable.
 class CHBDataset_HDF5(EEGDataset):
     def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", gpt_only=True,
                  num_subjects=-1, first_chunk_idx=501):
@@ -53,7 +54,6 @@ class CHBDataset_HDF5(EEGDataset):
         all_labels = []
         for f in self.files:
             all_labels.extend(f['labels'])
-        # TODO: adapt that
         print('\n@Guillaume\nOverall label mean: {}\nTotal number of samples (i.e. number of trials): {}'.format(
             np.mean(all_labels),
             sum(self.num_trials_per_sub)))

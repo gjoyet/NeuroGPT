@@ -974,6 +974,8 @@ def get_args() -> argparse.ArgumentParser:
              'for internal testing purposes only! '
              '(default: False)'
     )
+
+    # TODO: @Guillaume: remember this when writing documentation on how to use it.
     parser.add_argument(
         '--do-train',
         metavar='BOOL',
