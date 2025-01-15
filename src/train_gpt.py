@@ -168,6 +168,9 @@ def train(config: Dict = None) -> Trainer:
         # For now, splits train/test set across all subjects.
         # Could be modified to include subjects only in one of both sets.
         downstream_path = config["dst_data_path"]
+        filenames = sorted(os.listdir(downstream_path))
+        # TODO: make sure partition is saved, to know afterwards on which subjects what model is trained.
+
         if downstream_path.endswith('npz/'):
             dataset = CHBDataset_NPZ(sorted(os.listdir(downstream_path)), sample_keys=[
                 'inputs',
