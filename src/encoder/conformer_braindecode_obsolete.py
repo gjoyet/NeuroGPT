@@ -98,6 +98,7 @@ class EEGConformer(EEGModuleMixin, nn.Module):
             add_log_softmax=True,
             ch_pos=None,
             is_decoding_mode=False,
+            num_chunks=2,
     ):
         n_outputs, n_chans, n_times = deprecated_args(
             self,
@@ -148,8 +149,10 @@ class EEGConformer(EEGModuleMixin, nn.Module):
         self.is_decoding_mode = is_decoding_mode
         if self.is_decoding_mode:
             print("FC Layer for Classification created.")
+            # TODO: probably tweak around here to classify each chunk separately.
             self.fc = _FullyConnected(
-                final_fc_length=final_fc_length)
+                final_fc_length=final_fc_length,
+                num_chunks=num_chunks)
 
             self.final_layer = _FinalLayer(n_classes=self.n_outputs,
                                            return_features=return_features,
@@ -359,7 +362,7 @@ class _TransformerEncoder(nn.Sequential):
 class _FullyConnected(nn.Module):
     def __init__(self, final_fc_length,
                  drop_prob_1=0.5, drop_prob_2=0.3, out_channels=256,
-                 hidden_channels=32):
+                 hidden_channels=32, num_chunks=2):
         """Fully-connected layer for the transformer encoder.
 
         Parameters
@@ -383,7 +386,9 @@ class _FullyConnected(nn.Module):
         """
 
         super().__init__()
+        self.num_chunks = num_chunks
         self.fc = nn.Sequential(
+            # @Guillaume: nn.Linear(final_fc_length*self.num_chunks, out_channels) to decode whole trial at once.
             nn.Linear(final_fc_length, out_channels),
             nn.ELU(),
             nn.Dropout(drop_prob_1),
@@ -393,6 +398,7 @@ class _FullyConnected(nn.Module):
         )
 
     def forward(self, x):
+        # @Guillaume: x = x.contiguous().view(x.size(0)//self.num_chunks, -1) to decode whole trial at once.
         x = x.contiguous().view(x.size(0), -1)
         out = self.fc(x)
         return out

@@ -42,6 +42,7 @@ import pandas as pd
 import numpy as np
 from encoder.conformer_braindecode import EEGConformer
 from torch import manual_seed
+from torch.utils.data import random_split, Subset
 import sys
 
 from utils import cv_split_bci, read_threshold_sub
@@ -55,7 +56,6 @@ from embedder.make import make_embedder
 from trainer.make import make_trainer
 from trainer.base import Trainer
 from decoder.unembedder import make_unembedder
-from torch.utils.data import random_split
 
 os.environ["WANDB_DISABLED"] = "true"
 
@@ -163,6 +163,7 @@ def train(config: Dict = None) -> Trainer:
     #     validation_dataset = test_dataset
     #     test_dataset = train_dataset
 
+    dataset = None
     if config["training_style"] == 'decoding':  # decoding 2AFC
         # For now, splits train/test set across all subjects.
         # Could be modified to include subjects only in one of both sets.
@@ -172,15 +173,19 @@ def train(config: Dict = None) -> Trainer:
                 'inputs',
                 'attention_mask'
             ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
-                                          root_path=downstream_path, gpt_only=not config["use_encoder"])
+                                     root_path=downstream_path, gpt_only=not config["use_encoder"],
+                                     num_subjects=config["load_n_subjects"], first_chunk_idx=config["first_chunk_idx"])
         elif downstream_path.endswith('hdf5/'):
             dataset = CHBDataset_HDF5(sorted(os.listdir(downstream_path)), sample_keys=[
                 'inputs',
                 'attention_mask'
             ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
-                                          root_path=downstream_path, gpt_only=not config["use_encoder"])
+                                      root_path=downstream_path, gpt_only=not config["use_encoder"],
+                                      num_subjects=config["load_n_subjects"], first_chunk_idx=config["first_chunk_idx"])
         else:
             raise ImportError('Issue with loading data.')
+
+        print('Total size of dataset (i.e. number of chunks): {}\n'.format(len(dataset)))
 
         # Split lengths (e.g., 80% train, 20% test)
         split = 0.8
@@ -290,6 +295,35 @@ def train(config: Dict = None) -> Trainer:
             ),
             test_prediction.label_ids
         )
+
+        # TODO: could I do time-dependent evaluation also during training (to have a history?)
+        # WARNING: in test_dataset, chunks are not ordered anymore, which is why I need to select the correct indices.
+        idxs = np.array(test_dataset.indices)
+        metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
+        for chunk in range(config["num_chunks"]):
+            idxs_select = idxs[idxs % config["num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
+            test_prediction = trainer.predict(Subset(dataset, idxs_select))
+
+            metrics['chunk_position'].append(
+                config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
+            metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
+            metrics['n_samples'].append(len(idxs_select))
+
+        output_path = os.path.join(
+                config["log_dir"],
+                'time_dependent_test_metrics.csv'
+            )
+
+        pd.DataFrame.from_dict(
+            metrics
+        ).to_csv(
+            output_path,
+            mode='a',
+            header=not os.path.exists(output_path),
+            index=False
+        )
+
+    print("Run completed successfully.")
 
     return trainer
 
@@ -942,6 +976,8 @@ def get_args() -> argparse.ArgumentParser:
              'for internal testing purposes only! '
              '(default: False)'
     )
+
+    # TODO: @Guillaume: remember this when writing documentation on how to use it.
     parser.add_argument(
         '--do-train',
         metavar='BOOL',
@@ -1024,6 +1060,16 @@ def get_args() -> argparse.ArgumentParser:
                         type=str,
                         help='finetune with only encoder or not '
                              '(default: False) '
+                        )
+
+    parser.add_argument('--load-n-subjects', metavar='INT', default=-1, type=int,
+                        help='number of subjects to load (-1 loads all subjects) '
+                             '(default: -1) '
+                        )
+
+    parser.add_argument('--first-chunk-idx', metavar='INT', default=501, type=int,
+                        help='index in data of the start of the first chunk to be encoded '
+                             '(default: 501) '
                         )
 
     return parser

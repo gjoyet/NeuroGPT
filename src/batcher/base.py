@@ -32,16 +32,23 @@ def _pad_seq_right_to_n(
     )
 
 class EEGDataset(Dataset):
-    def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", population_mean=0, population_std=1, gpt_only=False, normalization=True, start_samp_pnt=-1):
+    def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", population_mean=0, population_std=1, gpt_only=False, normalization=True, start_samp_pnt=-1, num_subjects=-1):
         if root_path == "":
             self.filenames = filenames
         else:
             self.filenames = [root_path + fn for fn in filenames if os.path.isfile(root_path+fn)]
             self.root_path = root_path
 
-        # TODO: change back to loading all files when finished testing
-        self.filenames = self.filenames[:2]
-        print("Number of subjects loaded: ", len(self.filenames))
+        if num_subjects != -1:
+            # choose a random subset of subjects of size num_subjects
+            idxs = np.random.choice(len(self.filenames), size=num_subjects, replace=False)
+            idxs = np.sort(idxs)
+            self.filenames = [self.filenames[i] for i in idxs]
+
+        print("\nNumber of subjects loaded: ", len(self.filenames))
+        if num_subjects == 1:
+            print('({})'.format(self.filenames[0]))
+
         # self.data = data_all
         self.chunk_len = chunk_len
         self.num_chunks = num_chunks
@@ -92,7 +99,7 @@ class EEGDataset(Dataset):
         return tensor_data.numpy()
 
     def reorder_channels(self, data):
-        # TODO: check: at the moment, I store data already ordered liked in reordered_labels. Make sure that works.
+        # TODO: check: at the moment, I store data already ordered like in reordered_labels. Make sure that works.
         # -> should be okay: this is not used by the downstream dataset.
         chann_labels = {'FP1': 0, 'FP2': 1, 'F3': 2, 'F4': 3, 'C3': 4, 'C4': 5, 'P3': 6, 'P4': 7, 'O1': 8, 'O2': 9, 'F7': 10, 'F8': 11, 'T3': 12, 'T4': 13, 'T5': 14, 'T6': 15, 'FZ': 16, 'CZ': 17, 'PZ': 18, 'OZ': 19, 'T1': 20, 'T2': 21}
         reorder_labels = {'FP1': 0, 'FP2': 1, 'F7': 2, 'F3': 3, 'FZ': 4, 'F4': 5, 'F8': 6, 'T1': 7, 'T3': 8, 'C3': 9, 'CZ': 10, 'C4': 11, 'T4': 12, 'T2': 13, 'T5': 14, 'P3': 15, 'PZ': 16, 'P4': 17, 'T6': 18, 'O1': 19, 'OZ': 20, 'O2': 21}

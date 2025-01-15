@@ -63,9 +63,9 @@ class Model(torch.nn.Module):
             pretrained = torch.load(pretrained_path)
 
         else:
-            pretrained = torch.load(pretrained_path, map_location=torch.device('mps'))
+            pretrained = torch.load(pretrained_path, map_location=torch.device('cpu'))
 
-        # @Guillaume: layers that depend on chunk length:
+        # @Guillaume: at the moment, I just delete all pre-trained layers that depend on chunk size.
         # del pretrained['embedder.msk_embed']
         # del pretrained['embedder.cls_embed']
         # del pretrained['embedder.embed_model.model.0.weight']
@@ -76,7 +76,7 @@ class Model(torch.nn.Module):
         for k in self.state_dict():
             
             if k in pretrained:
-                # @Guillaume: breakpoint here if you want to see model structure.
+                # TODO: breakpoint here if you want to see model structure.
                 # This is probably the place where I could change the size of the embedder.
                 assert pretrained[k].shape == self.state_dict()[k].shape,\
                     f'{k} shape mismatch between pretrained model and current model '+\
