@@ -569,6 +569,8 @@ def get_training_partition(savefile, filenames, partition_id):
         df = pd.DataFrame(data, columns=['filename', 'partition', 'type'])
         df.to_csv(savefile, index=False)
 
+        print('\nCreating and saving new partition.\n')
+
         partition = pd.read_csv(savefile)
     else:
         time.sleep(60)
