@@ -9,9 +9,8 @@ from batcher.base import EEGDataset
 # WARNING: most recent version only implemented for hdf5, NOT npz!
 class CHBDataset_NPZ(EEGDataset):
     def __init__(self, filenames, sample_keys, chunk_len=500, num_chunks=10, ovlp=50, root_path="", gpt_only=True,
-                 num_subjects=-1, first_chunk_idx=501):
-        super().__init__(filenames, sample_keys, chunk_len, num_chunks, ovlp, root_path=root_path, gpt_only=gpt_only,
-                         num_subjects=num_subjects)
+                 first_chunk_idx=501):
+        super().__init__(filenames, sample_keys, chunk_len, num_chunks, ovlp, root_path=root_path, gpt_only=gpt_only)
 
         trials_all = []
         labels_all = []

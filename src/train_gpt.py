@@ -32,6 +32,8 @@ from batcher.downstream_dataset import MotorImageryDataset
 from batcher.chb_dataset import CHBDataset_NPZ, CHBDataset_HDF5
 import torch
 import os
+import re
+import time
 import argparse
 import pdb
 from typing import Dict
@@ -169,34 +171,54 @@ def train(config: Dict = None) -> Trainer:
         # Could be modified to include subjects only in one of both sets.
         downstream_path = config["dst_data_path"]
         filenames = sorted(os.listdir(downstream_path))
-        # TODO: make sure partition is saved, to know afterwards on which subjects what model is trained.
+
+        partition_filename = config["training_partition_loc"]
+        partition_id = config["training_partition_id"]
+
+        partition = get_training_partition(savefile=partition_filename, filenames=filenames, partition_id=partition_id)
+
+        test_files = np.concatenate(partition['scz_files_partition'][partition_id],
+                                    partition['hc_files_partition'][partition_id])
+        training_files = [fn for fn in filenames if fn not in test_files]
 
         if downstream_path.endswith('npz/'):
-            dataset = CHBDataset_NPZ(sorted(os.listdir(downstream_path)), sample_keys=[
+            train_dataset = CHBDataset_NPZ(training_files, sample_keys=[
                 'inputs',
                 'attention_mask'
             ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
                                      root_path=downstream_path, gpt_only=not config["use_encoder"],
-                                     num_subjects=config["load_n_subjects"], first_chunk_idx=config["first_chunk_idx"])
+                                     first_chunk_idx=config["first_chunk_idx"])
+            test_dataset = CHBDataset_NPZ(test_files, sample_keys=[
+                'inputs',
+                'attention_mask'
+            ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
+                                     root_path=downstream_path, gpt_only=not config["use_encoder"],
+                                     first_chunk_idx=config["first_chunk_idx"])
         elif downstream_path.endswith('hdf5/'):
-            dataset = CHBDataset_HDF5(sorted(os.listdir(downstream_path)), sample_keys=[
+            train_dataset = CHBDataset_HDF5(training_files, sample_keys=[
                 'inputs',
                 'attention_mask'
             ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
                                       root_path=downstream_path, gpt_only=not config["use_encoder"],
-                                      num_subjects=config["load_n_subjects"], first_chunk_idx=config["first_chunk_idx"])
+                                      first_chunk_idx=config["first_chunk_idx"])
+            test_dataset = CHBDataset_HDF5(test_files, sample_keys=[
+                'inputs',
+                'attention_mask'
+            ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
+                                      root_path=downstream_path, gpt_only=not config["use_encoder"],
+                                      first_chunk_idx=config["first_chunk_idx"])
         else:
             raise ImportError('Issue with loading data.')
 
         print('Total size of dataset (i.e. number of chunks): {}\n'.format(len(dataset)))
 
-        # Split lengths (e.g., 80% train, 20% test)
-        split = 0.8
-        train_size = int(split * len(dataset))
-        test_size = len(dataset) - train_size
-
-        # Split the dataset
-        train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
+        # # Split lengths (e.g., 80% train, 20% test)
+        # split = 0.8
+        # train_size = int(split * len(dataset))
+        # test_size = len(dataset) - train_size
+        #
+        # # Split the dataset
+        # train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
 
         validation_dataset = test_dataset
         test_dataset = train_dataset
@@ -508,6 +530,36 @@ def get_config(args: argparse.Namespace = None) -> Dict:
             config[arg] = None if config[arg] == -1 else config[arg]
 
     return config
+
+
+def get_training_partition(savefile, filenames, partition_id):
+    if os.path.isfile(savefile):
+        partition = np.load(savefile)
+    elif partition_id == 0:
+        np.random.seed(42)
+        pattern = r"subject(\d+)_"
+
+        scz_files = []
+        hc_files = []
+        for fn in filenames:
+            match = re.search(pattern, fn)
+            if match:
+                sid = int(match.group(1))
+                if sid < 100:
+                    scz_files.append(fn)
+                else:
+                    hc_files.append(fn)
+
+        scz_files_partition = np.array_split(np.random.shuffle(scz_files), 5)
+        hc_files_partition = np.array_split(np.random.shuffle(hc_files), 5)
+
+        np.savez(savefile, scz_files_partition=scz_files_partition, hc_files_partition=hc_files_partition)
+        partition = np.load(savefile)
+    else:
+        time.sleep(60)
+        partition = np.load(savefile)
+
+    return partition
 
 
 def get_args() -> argparse.ArgumentParser:
@@ -1065,14 +1117,18 @@ def get_args() -> argparse.ArgumentParser:
                              '(default: False) '
                         )
 
-    parser.add_argument('--load-n-subjects', metavar='INT', default=-1, type=int,
-                        help='number of subjects to load (-1 loads all subjects) '
-                             '(default: -1) '
-                        )
-
     parser.add_argument('--first-chunk-idx', metavar='INT', default=501, type=int,
                         help='index in data of the start of the first chunk to be encoded '
                              '(default: 501) '
+                        )
+
+    parser.add_argument('--training-partition-loc', metavar='STR', default=0, type=str,
+                        help='which partition to be used to train this model '
+                             '(default: 0) '
+                        )
+
+    parser.add_argument('--training-partition-id', metavar='INT', type=int,
+                        help='location of training partition npz file '
                         )
 
     return parser
