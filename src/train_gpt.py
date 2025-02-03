@@ -209,8 +209,6 @@ def train(config: Dict = None) -> Trainer:
         else:
             raise ImportError('Issue with loading data.')
 
-        print('Total size of dataset (i.e. number of chunks): {}\n'.format(len(dataset)))
-
         # # Split lengths (e.g., 80% train, 20% test)
         # split = 0.8
         # train_size = int(split * len(dataset))
