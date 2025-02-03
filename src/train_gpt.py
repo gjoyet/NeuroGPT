@@ -175,11 +175,10 @@ def train(config: Dict = None) -> Trainer:
         partition_filename = config["training_partition_loc"]
         partition_id = config["training_partition_id"]
 
-        partition = get_training_partition(savefile=partition_filename, filenames=filenames, partition_id=partition_id)
+        partition_df = get_training_partition(savefile=partition_filename, filenames=filenames, partition_id=partition_id)
 
-        test_files = np.concatenate(partition['scz_files_partition'][partition_id],
-                                    partition['hc_files_partition'][partition_id])
-        training_files = [fn for fn in filenames if fn not in test_files]
+        training_files = list(partition_df[partition_df['partition'] != partition_id]['filename'])
+        test_files = list(partition_df[partition_df['partition'] == partition_id]['filename'])
 
         if downstream_path.endswith('npz/'):
             train_dataset = CHBDataset_NPZ(training_files, sample_keys=[
@@ -534,7 +533,7 @@ def get_config(args: argparse.Namespace = None) -> Dict:
 
 def get_training_partition(savefile, filenames, partition_id):
     if os.path.isfile(savefile):
-        partition = np.load(savefile)
+        partition = pd.read_csv(savefile)
     elif partition_id == 0:
         np.random.seed(42)
         pattern = r"subject(\d+)_"
@@ -556,11 +555,26 @@ def get_training_partition(savefile, filenames, partition_id):
         scz_files_partition = np.array_split(scz_files, 5)
         hc_files_partition = np.array_split(hc_files, 5)
 
-        np.savez(savefile, scz_files_partition=scz_files_partition, hc_files_partition=hc_files_partition)
-        partition = np.load(savefile)
+        data = []
+
+        # Process the 'scz' list
+        for i, array in enumerate(scz_files_partition):
+            for fn in array:
+                data.append((fn, i, 'scz'))  # Append tuple (value, partition, type)
+
+        # Process the 'hc' list
+        for i, array in enumerate(hc_files_partition):
+            for fn in array:
+                data.append((fn, i, 'hc'))  # Append tuple (value, partition, type)
+
+        # Create DataFrame
+        df = pd.DataFrame(data, columns=['filename', 'partition', 'type'])
+        df.to_csv(savefile, index=False)
+
+        partition = pd.read_csv(savefile)
     else:
         time.sleep(60)
-        partition = np.load(savefile)
+        partition = pd.read_csv(savefile)
 
     return partition
 
