@@ -319,31 +319,48 @@ def train(config: Dict = None) -> Trainer:
         )
 
         # TODO: could I do time-dependent evaluation also during training (to have a history?)
-        # WARNING: in test_dataset, chunks are not ordered anymore, which is why I need to select the correct indices.
-        idxs = np.array(test_dataset.indices)
-        metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
-        for chunk in range(config["num_chunks"]):
-            idxs_select = idxs[idxs % config["num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
-            test_prediction = trainer.predict(Subset(dataset, idxs_select))
+        # WARNING: in validation_dataset, chunks are not ordered anymore, which is why I need to select the correct indices.
+        # idxs = np.array(validation_dataset.indices)
+        # metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
+        # for chunk in range(config["num_chunks"]):
+        #     idxs_select = idxs[idxs % config["num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
+        #     test_prediction = trainer.predict(Subset(dataset, idxs_select))
+        #
+        #     metrics['chunk_position'].append(
+        #         config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
+        #     metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
+        #     metrics['n_samples'].append(len(idxs_select))
+        #
+        # output_path = os.path.join(
+        #         config["log_dir"],
+        #         'time_dependent_test_metrics.csv'
+        #     )
 
-            metrics['chunk_position'].append(
-                config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
-            metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
-            metrics['n_samples'].append(len(idxs_select))
+        for setting, ds in zip(['training', 'test'], [train_dataset, validation_dataset]):
+            idxs = np.arange(len(ds))
+            metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
+            for chunk in range(config["num_chunks"]):
+                idxs_select = idxs[idxs % config["num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
+                test_prediction = trainer.predict(Subset(ds, idxs_select))
 
-        output_path = os.path.join(
-                config["log_dir"],
-                'time_dependent_test_metrics.csv'
+                metrics['chunk_position'].append(
+                    config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
+                metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
+                metrics['n_samples'].append(len(idxs_select))
+
+            output_path = os.path.join(
+                    config["log_dir"],
+                    'time_dependent_{}_metrics.csv'.format(setting)
+                )
+
+            pd.DataFrame.from_dict(
+                metrics
+            ).to_csv(
+                output_path,
+                mode='a',
+                header=not os.path.exists(output_path),
+                index=False
             )
-
-        pd.DataFrame.from_dict(
-            metrics
-        ).to_csv(
-            output_path,
-            mode='a',
-            header=not os.path.exists(output_path),
-            index=False
-        )
 
     print("Run completed successfully.")
 
