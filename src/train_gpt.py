@@ -550,8 +550,11 @@ def get_training_partition(savefile, filenames, partition_id):
                 else:
                     hc_files.append(fn)
 
-        scz_files_partition = np.array_split(np.random.shuffle(scz_files), 5)
-        hc_files_partition = np.array_split(np.random.shuffle(hc_files), 5)
+        np.random.shuffle(scz_files)
+        np.random.shuffle(hc_files)
+
+        scz_files_partition = np.array_split(scz_files, 5)
+        hc_files_partition = np.array_split(hc_files, 5)
 
         np.savez(savefile, scz_files_partition=scz_files_partition, hc_files_partition=hc_files_partition)
         partition = np.load(savefile)
