@@ -66,14 +66,14 @@ class CHBDataset_HDF5(EEGDataset):
         return sum(self.num_trials_per_sub) * self.num_chunks
 
     def __getitem__(self, index):
-        trial_index = index // self.num_chunks
+        overall_trial_index = index // self.num_chunks
         chunk_index = index % self.num_chunks
-        file_index = np.argwhere(self.cumnum_trials <= trial_index).max()
-        sample_index = trial_index - np.where(self.cumnum_trials <= trial_index, self.cumnum_trials, 0).max()
+        file_index = np.argwhere(self.cumnum_trials <= overall_trial_index).max()
+        infile_trial_index = overall_trial_index - np.where(self.cumnum_trials <= overall_trial_index, self.cumnum_trials, 0).max()
 
         # Calculate the result
         select = self.first_chunk_idx + chunk_index * (self.chunk_len - self.ovlp)
-        trial = self.files[file_index]['epochs'][sample_index, :, select:select + self.chunk_len]
-        label = self.files[file_index]['labels'][sample_index, ...]
+        trial = self.files[file_index]['epochs'][infile_trial_index, :, select:select + self.chunk_len]
+        label = self.files[file_index]['labels'][infile_trial_index, ...]
 
         return self.preprocess_sample(np.array(trial), 1, np.array(label))

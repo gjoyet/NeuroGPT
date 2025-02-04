@@ -165,6 +165,8 @@ def train(config: Dict = None) -> Trainer:
     #     validation_dataset = test_dataset
     #     test_dataset = train_dataset
 
+    # TODO: leave-trial-out CV: len(dataset) // num_chunks -> select trials for test set
+    #           -> transform back to chunk indices instead of trial indices
     dataset = None
     if config["training_style"] == 'decoding':  # decoding 2AFC
         # For now, splits train/test set across all subjects.
@@ -425,7 +427,6 @@ def make_model(model_config: Dict = None):
         decoder=decoder,
         unembedder=unembedder
     )
-    model = model.to(torch.device("cuda" if torch.cuda.is_available() else "mps"))
 
     if model_config["ft_only_encoder"]:
         model.switch_ft_mode(ft_encoder_only=True)
