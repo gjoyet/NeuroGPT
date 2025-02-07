@@ -205,7 +205,7 @@ def train(config: Dict = None) -> Trainer:
         partition = get_training_partition(savedir=partition_dir, dataset_size=len(dataset),
                                            num_chunks=config["num_chunks"], partition_id=partition_id)
 
-        training_indices = np.concatenate(np.delete(partition, partition_id, axis=0))
+        training_indices = np.concatenate([p for i, p in enumerate(partition) if i != partition_id])
         test_indices = partition[partition_id]
 
         validation_dataset = Subset(dataset, training_indices)
@@ -560,6 +560,7 @@ def get_training_partition(savedir, dataset_size, num_chunks, partition_id):
         time.sleep(60)
 
     files = os.listdir(savedir)
+    files.sort()
     partition = [np.load(os.path.join(savedir, f)) for f in files]
 
     return partition
