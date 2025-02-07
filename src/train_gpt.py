@@ -560,7 +560,7 @@ def get_training_partition(savedir, dataset_size, num_chunks, partition_id):
         time.sleep(60)
 
     files = os.listdir(savedir)
-    partition = [np.load(f) for f in files]
+    partition = [np.load(os.path.join(savedir, f)) for f in files]
 
     return partition
 
