@@ -536,10 +536,12 @@ def get_config(args: argparse.Namespace = None) -> Dict:
 
 
 def get_training_partition(savedir, dataset_size, num_chunks, partition_id):
-    if os.path.isdir(savedir):
-        files = os.listdir(savedir)
-        partition = [np.load(f) for f in files]
-    elif partition_id == 0:
+    if not os.path.isdir(savedir):
+        os.mkdir(savedir)
+
+    files = os.listdir(savedir)
+
+    if len(files) == 0 and partition_id == 0:
         np.random.seed(42)
         idxs = np.arange(dataset_size // num_chunks)
 
@@ -554,12 +556,11 @@ def get_training_partition(savedir, dataset_size, num_chunks, partition_id):
 
         print('\nCreating and saving new partition.\n')
 
-        files = os.listdir(savedir)
-        partition = [np.load(f) for f in files]
-    else:
+    elif len(files) == 0:
         time.sleep(60)
-        files = os.listdir(savedir)
-        partition = [np.load(f) for f in files]
+
+    files = os.listdir(savedir)
+    partition = [np.load(f) for f in files]
 
     return partition
 
