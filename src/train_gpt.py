@@ -174,35 +174,18 @@ def train(config: Dict = None) -> Trainer:
         downstream_path = config["dst_data_path"]
         filenames = sorted(os.listdir(downstream_path))
 
-        partition_filename = config["training_partition_loc"]
+        partition_dir = config["training_partition_loc"]
         partition_id = config["training_partition_id"]
 
-        partition_df = get_training_partition(savefile=partition_filename, filenames=filenames, partition_id=partition_id)
-
-        training_files = list(partition_df[partition_df['partition'] != partition_id]['filename'])
-        test_files = list(partition_df[partition_df['partition'] == partition_id]['filename'])
-
         if downstream_path.endswith('npz/'):
-            train_dataset = CHBDataset_NPZ(training_files, sample_keys=[
-                'inputs',
-                'attention_mask'
-            ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
-                                     root_path=downstream_path, gpt_only=not config["use_encoder"],
-                                     first_chunk_idx=config["first_chunk_idx"])
-            test_dataset = CHBDataset_NPZ(test_files, sample_keys=[
+            dataset = CHBDataset_NPZ(filenames=filenames, sample_keys=[
                 'inputs',
                 'attention_mask'
             ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
                                      root_path=downstream_path, gpt_only=not config["use_encoder"],
                                      first_chunk_idx=config["first_chunk_idx"])
         elif downstream_path.endswith('hdf5/'):
-            train_dataset = CHBDataset_HDF5(training_files, sample_keys=[
-                'inputs',
-                'attention_mask'
-            ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
-                                      root_path=downstream_path, gpt_only=not config["use_encoder"],
-                                      first_chunk_idx=config["first_chunk_idx"])
-            test_dataset = CHBDataset_HDF5(test_files, sample_keys=[
+            dataset = CHBDataset_HDF5(filenames=filenames, sample_keys=[
                 'inputs',
                 'attention_mask'
             ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
@@ -219,8 +202,14 @@ def train(config: Dict = None) -> Trainer:
         # # Split the dataset
         # train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
 
-        validation_dataset = test_dataset
-        test_dataset = train_dataset
+        partition = get_training_partition(savedir=partition_dir, dataset_size=len(dataset),
+                                           num_chunks=config["num_chunks"], partition_id=partition_id)
+
+        training_indices = np.concatenate(np.delete(partition, partition_id, axis=0))
+        test_indices = partition[partition_id]
+
+        validation_dataset = Subset(dataset, training_indices)
+        test_dataset = Subset(dataset, test_indices)
 
     else:
         root_path = config["train_data_path"]
@@ -339,7 +328,7 @@ def train(config: Dict = None) -> Trainer:
         #     )
 
         for setting, ds in zip(['training', 'test'], [train_dataset, validation_dataset]):
-            idxs = np.arange(len(ds))
+            idxs = np.array(ds.indices)
             metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
             for chunk in range(config["num_chunks"]):
                 idxs_select = idxs[idxs % config["num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
@@ -546,52 +535,31 @@ def get_config(args: argparse.Namespace = None) -> Dict:
     return config
 
 
-def get_training_partition(savefile, filenames, partition_id):
-    if os.path.isfile(savefile):
-        partition = pd.read_csv(savefile)
+def get_training_partition(savedir, dataset_size, num_chunks, partition_id):
+    if os.path.isdir(savedir):
+        files = os.listdir(savedir)
+        partition = [np.load(f) for f in files]
     elif partition_id == 0:
         np.random.seed(42)
-        pattern = r"subject(\d+)_"
+        idxs = np.arange(dataset_size // num_chunks)
 
-        scz_files = []
-        hc_files = []
-        for fn in filenames:
-            match = re.search(pattern, fn)
-            if match:
-                sid = int(match.group(1))
-                if sid < 100:
-                    scz_files.append(fn)
-                else:
-                    hc_files.append(fn)
+        np.random.shuffle(idxs)
 
-        np.random.shuffle(scz_files)
-        np.random.shuffle(hc_files)
+        trial_partition = np.array_split(idxs, 5)
 
-        scz_files_partition = np.array_split(scz_files, 5)
-        hc_files_partition = np.array_split(hc_files, 5)
-
-        data = []
-
-        # Process the 'scz' list
-        for i, array in enumerate(scz_files_partition):
-            for fn in array:
-                data.append((fn, i, 'scz'))  # Append tuple (value, partition, type)
-
-        # Process the 'hc' list
-        for i, array in enumerate(hc_files_partition):
-            for fn in array:
-                data.append((fn, i, 'hc'))  # Append tuple (value, partition, type)
-
-        # Create DataFrame
-        df = pd.DataFrame(data, columns=['filename', 'partition', 'type'])
-        df.to_csv(savefile, index=False)
+        # convert indices for trials to indices for chunks
+        for num, p in enumerate(trial_partition):
+            chunk_partition = np.array([i for x in p for i in range(x * num_chunks, (x + 1) * num_chunks)])
+            np.save(os.path.join(savedir, 'chunk_indices_partition{}'.format(num)), chunk_partition)
 
         print('\nCreating and saving new partition.\n')
 
-        partition = pd.read_csv(savefile)
+        files = os.listdir(savedir)
+        partition = [np.load(f) for f in files]
     else:
         time.sleep(60)
-        partition = pd.read_csv(savefile)
+        files = os.listdir(savedir)
+        partition = [np.load(f) for f in files]
 
     return partition
 
