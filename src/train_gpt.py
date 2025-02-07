@@ -208,8 +208,11 @@ def train(config: Dict = None) -> Trainer:
         training_indices = np.concatenate([p for i, p in enumerate(partition) if i != partition_id])
         test_indices = partition[partition_id]
 
-        validation_dataset = Subset(dataset, training_indices)
+        train_dataset = Subset(dataset, training_indices)
         test_dataset = Subset(dataset, test_indices)
+
+        validation_dataset = test_dataset
+        test_dataset = train_dataset
 
     else:
         root_path = config["train_data_path"]
