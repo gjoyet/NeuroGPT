@@ -285,7 +285,12 @@ def train(config: Dict = None) -> Trainer:
             )
         )
 
-    if test_dataset is not None:
+    # GENERAL EVALUATION
+    if test_dataset is not None and not os.path.isfile(os.path.join(
+                config["log_dir"],
+                'test_metrics.csv'
+            )):
+
         test_prediction = trainer.predict(test_dataset)
         pd.DataFrame(
             test_prediction.metrics,
@@ -312,25 +317,16 @@ def train(config: Dict = None) -> Trainer:
             test_prediction.label_ids
         )
 
-        # TODO: could I do time-dependent evaluation also during training (to have a history?)
-        # WARNING: in validation_dataset, chunks are not ordered anymore, which is why I need to select the correct indices.
-        # idxs = np.array(validation_dataset.indices)
-        # metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
-        # for chunk in range(config["num_chunks"]):
-        #     idxs_select = idxs[idxs % config["num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
-        #     test_prediction = trainer.predict(Subset(dataset, idxs_select))
-        #
-        #     metrics['chunk_position'].append(
-        #         config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
-        #     metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
-        #     metrics['n_samples'].append(len(idxs_select))
-        #
-        # output_path = os.path.join(
-        #         config["log_dir"],
-        #         'time_dependent_test_metrics.csv'
-        #     )
-
+        # TIME-DEPENDENT EVALUATION (training and test sets)
         for setting, ds in zip(['training', 'test'], [train_dataset, validation_dataset]):
+            output_path = os.path.join(
+                    config["log_dir"],
+                    'time_dependent_{}_metrics.csv'.format(setting)
+                )
+
+            if os.path.isfile(output_path):
+                continue
+
             idxs = np.array(ds.indices)
             metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
             for chunk in range(config["num_chunks"]):
@@ -342,10 +338,37 @@ def train(config: Dict = None) -> Trainer:
                 metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
                 metrics['n_samples'].append(len(idxs_select))
 
+            pd.DataFrame.from_dict(
+                metrics
+            ).to_csv(
+                output_path,
+                mode='a',
+                header=not os.path.exists(output_path),
+                index=False
+            )
+
+        # TIME_DEPENDENT EVALUATION BY GROUPS (only test set)
+        indices_by_type = dataset.get_trials_by_subject_type()
+        for k, idxs in indices_by_type.items():
             output_path = os.path.join(
                     config["log_dir"],
-                    'time_dependent_{}_metrics.csv'.format(setting)
+                    'time_dependent_test_metrics_only_{}.csv'.format(k)
                 )
+
+            if os.path.isfile(output_path):
+                continue
+
+            print('{} indices: {}'.format(k, idxs))  # remove later
+            idxs, _, _ = np.intersect1d(idxs, validation_dataset.indices)
+            metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
+            for chunk in range(config["num_chunks"]):
+                idxs_select = idxs[idxs % config["num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
+                test_prediction = trainer.predict(Subset(dataset, idxs_select))
+
+                metrics['chunk_position'].append(
+                    config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
+                metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
+                metrics['n_samples'].append(len(idxs_select))
 
             pd.DataFrame.from_dict(
                 metrics
@@ -355,6 +378,8 @@ def train(config: Dict = None) -> Trainer:
                 header=not os.path.exists(output_path),
                 index=False
             )
+
+    # TODO: UMAP (on training set)
 
     print("Run completed successfully.")
 

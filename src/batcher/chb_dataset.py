@@ -1,4 +1,5 @@
 import os
+import re
 
 import h5py
 import numpy as np
@@ -61,6 +62,23 @@ class CHBDataset_HDF5(EEGDataset):
         self.Fs = 1000  # 250Hz from original paper
 
         self.first_chunk_idx = first_chunk_idx
+
+    def get_trials_by_subject_type(self):
+        pattern = r"subject(\d+)_"
+        scz_indices = []
+        hc_indices = []
+        for i, fn in enumerate(self.filenames):
+            match = re.search(pattern, fn)
+            if match:
+                sid = int(match.group(1))
+                if sid < 100:
+                    scz_indices.extend(range(self.cumnum_trials[i] * self.num_chunks,
+                                             self.cumnum_trials[i+1] * self.num_chunks))
+                else:
+                    hc_indices.extend(range(self.cumnum_trials[i] * self.num_chunks,
+                                            self.cumnum_trials[i + 1] * self.num_chunks))
+
+        return {'scz': np.array(hc_indices), 'hc': np.array(hc_indices)}
 
     def __len__(self):
         return sum(self.num_trials_per_sub) * self.num_chunks
