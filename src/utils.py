@@ -9,10 +9,19 @@ import pickle
 import time
 import pandas as pd
 
+import re
+from collections import defaultdict
+import matplotlib
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+matplotlib.use('macOSX')
+
+
 def load_tuh_all(path):
     # files = os.listdir(path)
     filepath = []
-    file=""
+    file = ""
     # for file in files:
     groups = os.listdir(path)
     for group in groups:
@@ -43,9 +52,9 @@ def load_pickle(filename):
     print(data)
     end_time = time.time()
     print("Compressed Elapsed time:", end_time - start_time, "seconds")
-    
+
     return data['data'], np.array(data['channel'])
-  
+
 
 def read_threshold_sub(csv_file, lower_bound=2599, upper_bound=1000000):
     df_read = pd.read_csv(csv_file)
@@ -57,6 +66,7 @@ def read_threshold_sub(csv_file, lower_bound=2599, upper_bound=1000000):
         if (tlen > lower_bound) and (tlen < upper_bound):
             filtered_files.append(fn)
     return filtered_files
+
 
 def get_epi_files(path, epi_csv, nonepi_csv, lower_bound=2599, upper_bound=1000000):
     epi_full_path = []
@@ -70,12 +80,14 @@ def get_epi_files(path, epi_csv, nonepi_csv, lower_bound=2599, upper_bound=10000
 
     return epi_full_path + nonepi_full_path
 
+
 def read_sub_list(epi_list):
     with open(epi_list, 'r') as file:
         items = file.readlines()
     # Remove newline characters
     epi_subs = [item.strip() for item in items]
     return epi_subs
+
 
 def exclude_epi_subs(csv_file, epi_list, lower_bound=2599, upper_bound=1000000, files_all=None):
     epi_subs = read_sub_list(epi_list)
@@ -88,6 +100,7 @@ def exclude_epi_subs(csv_file, epi_list, lower_bound=2599, upper_bound=1000000, 
     # pdb.set_trace()
     return filtered_files
 
+
 def exclude_sz_subs(csv_file, lower_bound=2599, upper_bound=1000000, files_all=None):
     if files_all is None:
         all_files = read_threshold_sub(csv_file, lower_bound, upper_bound)
@@ -97,14 +110,60 @@ def exclude_sz_subs(csv_file, lower_bound=2599, upper_bound=1000000, files_all=N
         sz_subs = f.readlines()
     filtered_files = [f for f in all_files if not any(sub_id in f for sub_id in sz_subs)]
     # pdb.set_trace()
-    return filtered_files        
+    return filtered_files
+
 
 def cv_split_bci(filenames):
     train_folds = []
     val_folds = []
     for i in range(9):
-        train_files = filenames[0:i*2] + filenames[i*2+2:]
-        validation_files = filenames[i*2 : i*2+2]
+        train_files = filenames[0:i * 2] + filenames[i * 2 + 2:]
+        validation_files = filenames[i * 2: i * 2 + 2]
         train_folds.append(train_files)
         val_folds.append(validation_files)
     return train_folds, val_folds
+
+
+def plot_results(results_folder_path):
+    models = os.listdir(results_folder_path)
+    models.sort()
+
+    model_groups = defaultdict(list)
+
+    for m in models:
+        # Replace any single digit with a placeholder (e.g., '#')
+        template = re.sub(r'\d', '#', m, count=1)  # Replace only the first digit occurrence
+        model_groups[template].append(m)
+
+    for mg in model_groups:
+        for fn in ['time_dependent_training_metrics',
+                   'time_dependent_test_metrics']:  # later add 'scz', 'hc'
+            dfs = [pd.read_csv(os.path.join(results_folder_path, m, f'{fn}.csv')) for m in mg]
+
+        combined_df = pd.concat(dfs)  # Merge all data into one DataFrame
+
+        # Create a seaborn lineplot, passing the matrix directly to seaborn
+        plt.figure(figsize=(10, 6))  # Optional: Set the figure size
+
+        # Create the lineplot, seaborn will automatically calculate confidence intervals
+        sns.lineplot(data=combined_df, x=combined_df['chunk_position'] - 500, y='accuracy',
+                     errorbar='ci', label='Accuracy')
+        sns.despine()
+
+        plt.axhline(y=0.5, xmin=0, color='orange', linestyle='dashdot', linewidth=1, label='Random Chance')
+        plt.axvline(x=0, ymin=0, ymax=0.05, color='black', linewidth=1, label='Stimulus Onset')
+
+        # Set plot labels and title
+        plt.xlabel('Time (ms)')
+        plt.ylabel('Accuracy')
+        plt.legend()
+
+        group_name = mg[0][:-13]
+        plt.title(group_name)
+
+        plt.savefig(os.path.join(results_folder_path, 'plots', group_name, f'{fn}.png'))
+
+
+if __name__ == '__main__':
+    results_folder = ''
+    plot_results(results_folder_path=results_folder)
