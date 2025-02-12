@@ -257,14 +257,17 @@ def train(config: Dict = None) -> Trainer:
                 'model_final'
             )
         )
-    else:
-        trainer.model = AutoModel.from_pretrained(config["resume_from"])
+        torch.save(trainer.model.state_dict(),
+                   os.path.join(
+                       config["log_dir"],
+                       'pytorch_model.bin'
+                   ))
 
     # GENERAL EVALUATION
     if test_dataset is not None and not os.path.isfile(os.path.join(
-                config["log_dir"],
-                'test_metrics.csv'
-            )):
+            config["log_dir"],
+            'test_metrics.csv'
+    )):
 
         test_prediction = trainer.predict(test_dataset)
         pd.DataFrame(
@@ -295,9 +298,9 @@ def train(config: Dict = None) -> Trainer:
         # TIME-DEPENDENT EVALUATION (training and test sets)
         for setting, ds in zip(['training', 'test'], [train_dataset, validation_dataset]):
             output_path = os.path.join(
-                    config["log_dir"],
-                    'time_dependent_{}_metrics.csv'.format(setting)
-                )
+                config["log_dir"],
+                'time_dependent_{}_metrics.csv'.format(setting)
+            )
 
             if os.path.isfile(output_path):
                 continue
@@ -305,7 +308,8 @@ def train(config: Dict = None) -> Trainer:
             idxs = np.array(ds.indices)
             metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
             for chunk in range(config["num_chunks"]):
-                idxs_select = idxs[idxs % config["num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
+                idxs_select = idxs[idxs % config[
+                    "num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
                 test_prediction = trainer.predict(Subset(dataset, idxs_select))
 
                 metrics['chunk_position'].append(
@@ -326,9 +330,9 @@ def train(config: Dict = None) -> Trainer:
         indices_by_type = dataset.get_trials_by_subject_type()
         for k, idxs in indices_by_type.items():
             output_path = os.path.join(
-                    config["log_dir"],
-                    'time_dependent_test_metrics_only_{}.csv'.format(k)
-                )
+                config["log_dir"],
+                'time_dependent_test_metrics_only_{}.csv'.format(k)
+            )
 
             if os.path.isfile(output_path):
                 continue
