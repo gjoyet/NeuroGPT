@@ -359,8 +359,9 @@ def train(config: Dict = None) -> Trainer:
 
     # TODO: UMAP (on training set)
 
-    # TODO: decode(!) single subjects (check if it is more stable than MVPA)
+    # TODO: evaluate(!) single subjects (check if it is more stable than MVPA)
     #  choose the same subjects as the ones I will train(!) models on separately.
+    #  e.g. from MVPA: [21, 24, 40, 42, 106, 116, 206, 208]
 
     print("Run completed successfully.")
 
