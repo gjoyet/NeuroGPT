@@ -78,7 +78,7 @@ class CHBDataset_HDF5(EEGDataset):
                     hc_indices.extend(range(self.cumnum_trials[i] * self.num_chunks,
                                             self.cumnum_trials[i + 1] * self.num_chunks))
 
-        return {'scz': np.array(hc_indices), 'hc': np.array(hc_indices)}
+        return {'scz': np.array(scz_indices), 'hc': np.array(hc_indices)}
 
     # TODO: implement this
     def get_trials_of_single_subject(self, subject_id):
