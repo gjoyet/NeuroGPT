@@ -9,14 +9,6 @@ import pickle
 import time
 import pandas as pd
 
-import re
-from collections import defaultdict
-import matplotlib
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-matplotlib.use('macOSX')
-
 
 def load_tuh_all(path):
     # files = os.listdir(path)
@@ -122,48 +114,3 @@ def cv_split_bci(filenames):
         train_folds.append(train_files)
         val_folds.append(validation_files)
     return train_folds, val_folds
-
-
-def plot_results(results_folder_path):
-    models = os.listdir(results_folder_path)
-    models.sort()
-
-    model_groups = defaultdict(list)
-
-    for m in models:
-        # Replace any single digit with a placeholder (e.g., '#')
-        template = re.sub(r'\d', '#', m, count=1)  # Replace only the first digit occurrence
-        model_groups[template].append(m)
-
-    for mg in model_groups:
-        for fn in ['time_dependent_training_metrics',
-                   'time_dependent_test_metrics']:  # later add 'scz', 'hc'
-            dfs = [pd.read_csv(os.path.join(results_folder_path, m, f'{fn}.csv')) for m in mg]
-
-        combined_df = pd.concat(dfs)  # Merge all data into one DataFrame
-
-        # Create a seaborn lineplot, passing the matrix directly to seaborn
-        plt.figure(figsize=(10, 6))  # Optional: Set the figure size
-
-        # Create the lineplot, seaborn will automatically calculate confidence intervals
-        sns.lineplot(data=combined_df, x=combined_df['chunk_position'] - 500, y='accuracy',
-                     errorbar='ci', label='Accuracy')
-        sns.despine()
-
-        plt.axhline(y=0.5, xmin=0, color='orange', linestyle='dashdot', linewidth=1, label='Random Chance')
-        plt.axvline(x=0, ymin=0, ymax=0.05, color='black', linewidth=1, label='Stimulus Onset')
-
-        # Set plot labels and title
-        plt.xlabel('Time (ms)')
-        plt.ylabel('Accuracy')
-        plt.legend()
-
-        group_name = mg[0][:-13]
-        plt.title(group_name)
-
-        plt.savefig(os.path.join(results_folder_path, 'plots', group_name, f'{fn}.png'))
-
-
-if __name__ == '__main__':
-    results_folder = ''
-    plot_results(results_folder_path=results_folder)
