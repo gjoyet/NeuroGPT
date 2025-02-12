@@ -4,6 +4,7 @@ from collections import defaultdict
 import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd
 
 matplotlib.use('macOSX')
 
@@ -43,7 +44,7 @@ def plot_results(results_folder_path):
             plt.ylabel('Accuracy')
             plt.legend()
 
-            run = group_name.split('-')[-4] + '-' + group_name.split('-')[-3]
+            run = group_name.split('-')[-3]
             if group_name.startswith('not-pretrained'):
                 run = 'not-pretrained-' + run
             plt.title(run)
