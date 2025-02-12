@@ -80,6 +80,10 @@ class CHBDataset_HDF5(EEGDataset):
 
         return {'scz': np.array(hc_indices), 'hc': np.array(hc_indices)}
 
+    # TODO: implement this
+    def get_trials_of_single_subject(self, subject_id):
+        pass
+
     def __len__(self):
         return sum(self.num_trials_per_sub) * self.num_chunks
 
