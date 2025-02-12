@@ -265,14 +265,17 @@ def train(config: Dict = None) -> Trainer:
                 'model_final'
             )
         )
-    else:
-        trainer.model = AutoModel.from_pretrained(config["resume_from"])
+        torch.save(trainer.model.state_dict(),
+                   os.path.join(
+                       config["log_dir"],
+                       'pytorch_model.bin'
+                   ))
 
     # GENERAL EVALUATION
     if test_dataset is not None and not os.path.isfile(os.path.join(
-                config["log_dir"],
-                'test_metrics.csv'
-            )):
+            config["log_dir"],
+            'test_metrics.csv'
+    )):
 
         test_prediction = trainer.predict(test_dataset)
         pd.DataFrame(
@@ -300,70 +303,68 @@ def train(config: Dict = None) -> Trainer:
             test_prediction.label_ids
         )
 
-        # TIME-DEPENDENT EVALUATION (training and test sets)
-        for setting, ds in zip(['training', 'test'], [train_dataset, validation_dataset]):
-            output_path = os.path.join(
-                    config["log_dir"],
-                    'time_dependent_{}_metrics.csv'.format(setting)
-                )
+    # TIME-DEPENDENT EVALUATION (training and test sets)
+    for setting, ds in zip(['training', 'test'], [train_dataset, validation_dataset]):
+        output_path = os.path.join(
+            config["log_dir"],
+            'time_dependent_{}_metrics.csv'.format(setting)
+        )
 
-            if os.path.isfile(output_path):
-                continue
+        if os.path.isfile(output_path):
+            continue
 
-            idxs = np.arange(len(ds))
-            metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
-            for chunk in range(config["num_chunks"]):
-                idxs_select = idxs[idxs % config["num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
-                test_prediction = trainer.predict(Subset(ds, idxs_select))
+        idxs = np.arange(len(ds))
+        metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
+        for chunk in range(config["num_chunks"]):
+            idxs_select = idxs[idxs % config["num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
+            test_prediction = trainer.predict(Subset(ds, idxs_select))
 
-                metrics['chunk_position'].append(
-                    config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
-                metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
-                metrics['n_samples'].append(len(idxs_select))
+            metrics['chunk_position'].append(
+                config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
+            metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
+            metrics['n_samples'].append(len(idxs_select))
 
-            pd.DataFrame.from_dict(
-                metrics
-            ).to_csv(
-                output_path,
-                mode='a',
-                header=not os.path.exists(output_path),
-                index=False
-            )
+        pd.DataFrame.from_dict(
+            metrics
+        ).to_csv(
+            output_path,
+            mode='a',
+            header=not os.path.exists(output_path),
+            index=False
+        )
 
-            # TIME_DEPENDENT EVALUATION BY GROUPS (only test set)
-            indices_by_type = dataset.get_trials_by_subject_type()
-            for k, idxs in indices_by_type.items():
-                output_path = os.path.join(
-                    config["log_dir"],
-                    'time_dependent_test_metrics_only_{}.csv'.format(k)
-                )
+    # TIME_DEPENDENT EVALUATION BY GROUPS (only test set)
+    indices_by_type = dataset.get_indices_by_subject_type()
+    for k, idxs in indices_by_type.items():
+        output_path = os.path.join(
+            config["log_dir"],
+            'time_dependent_test_metrics_only_{}.csv'.format(k)
+        )
 
-                if os.path.isfile(output_path):
-                    continue
+        if os.path.isfile(output_path):
+            continue
 
-                print('{} indices: {}'.format(k, idxs))  # remove later
-                idxs, _, _ = np.intersect1d(idxs, validation_dataset.indices)
-                metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
-                for chunk in range(config["num_chunks"]):
-                    idxs_select = idxs[idxs % config[
-                        "num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
-                    test_prediction = trainer.predict(Subset(dataset, idxs_select))
+        idxs = np.intersect1d(idxs, validation_dataset.indices)
+        metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
+        for chunk in range(config["num_chunks"]):
+            idxs_select = idxs[idxs % config["num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
+            test_prediction = trainer.predict(Subset(dataset, idxs_select))
 
-                    metrics['chunk_position'].append(
-                        config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
-                    metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
-                    metrics['n_samples'].append(len(idxs_select))
+            metrics['chunk_position'].append(
+                config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
+            metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
+            metrics['n_samples'].append(len(idxs_select))
 
-                pd.DataFrame.from_dict(
-                    metrics
-                ).to_csv(
-                    output_path,
-                    mode='a',
-                    header=not os.path.exists(output_path),
-                    index=False
-                )
+        pd.DataFrame.from_dict(
+            metrics
+        ).to_csv(
+            output_path,
+            mode='a',
+            header=not os.path.exists(output_path),
+            index=False
+        )
 
-        # TODO: UMAP (on training set)
+    # TODO: UMAP (on training set)
 
     print("Run completed successfully.")
 
