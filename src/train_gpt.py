@@ -338,7 +338,7 @@ def train(config: Dict = None) -> Trainer:
             continue
 
         print('{} indices: {}'.format(k, idxs))  # remove later
-        idxs, _, _ = np.intersect1d(idxs, validation_dataset.indices)
+        idxs = np.intersect1d(idxs, validation_dataset.indices)
         metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
         for chunk in range(config["num_chunks"]):
             idxs_select = idxs[idxs % config["num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
