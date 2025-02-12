@@ -164,12 +164,12 @@ def train(config: Dict = None) -> Trainer:
 
         print('Total size of dataset (i.e. number of chunks): {}\n'.format(len(dataset)))
 
-        split = 0.75
-        train_size = int(split * len(dataset))
-        test_size = len(dataset) - train_size
+        training_indices, test_indices = get_training_partition(dataset_size=len(dataset),
+                                                                num_chunks=config["num_chunks"])
 
         # Split the dataset
-        train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
+        train_dataset = Subset(dataset, training_indices)
+        test_dataset = Subset(dataset, test_indices)
 
         validation_dataset = test_dataset
         test_dataset = train_dataset
@@ -493,6 +493,23 @@ def get_config(args: argparse.Namespace = None) -> Dict:
             config[arg] = None if config[arg] == -1 else config[arg]
 
     return config
+
+
+def get_training_partition(dataset_size, num_chunks):
+    np.random.seed(42)
+    idxs = np.arange(dataset_size // num_chunks)
+
+    np.random.shuffle(idxs)
+
+    trial_partition = np.array_split(idxs, 4)
+
+    # convert indices for trials to indices for chunks
+    partition = []
+    for num, p in enumerate(trial_partition):
+        chunk_partition = np.array([i for x in p for i in range(x * num_chunks, (x + 1) * num_chunks)])
+        partition.append(chunk_partition)
+
+    return np.concatenate(partition[:-1]), partition[-1]
 
 
 def get_args() -> argparse.ArgumentParser:
