@@ -114,3 +114,23 @@ def cv_split_bci(filenames):
         train_folds.append(train_files)
         val_folds.append(validation_files)
     return train_folds, val_folds
+
+
+def convert_safetensors(results_folder):
+    import torch
+    from safetensors.torch import load_file
+
+    models = os.listdir(results_folder)
+
+    # Load the model from safetensors file
+
+    for m in models:
+        if '.DS_Store' in m:
+            continue
+        safetensors_path = os.path.join(results_folder, m, "model_final", "model.safetensors")
+        state_dict = load_file(safetensors_path)
+
+        # Save the model in pytorch_model.bin format
+        torch.save(state_dict, os.path.join(results_folder, m, "model_final", "pytorch_model.bin"))
+
+        print("Conversion complete: pytorch_model.bin saved.")

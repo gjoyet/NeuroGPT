@@ -63,7 +63,7 @@ class CHBDataset_HDF5(EEGDataset):
 
         self.first_chunk_idx = first_chunk_idx
 
-    def get_trials_by_subject_type(self):
+    def get_indices_by_subject_type(self):
         pattern = r"subject(\d+)_"
         scz_indices = []
         hc_indices = []
@@ -81,7 +81,7 @@ class CHBDataset_HDF5(EEGDataset):
         return {'scz': np.array(scz_indices), 'hc': np.array(hc_indices)}
 
     # TODO: implement this
-    def get_trials_of_single_subject(self, subject_id):
+    def get_indices_of_single_subject(self, subject_id):
         pass
 
     def __len__(self):

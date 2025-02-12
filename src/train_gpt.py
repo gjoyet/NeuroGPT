@@ -327,7 +327,7 @@ def train(config: Dict = None) -> Trainer:
         )
 
     # TIME_DEPENDENT EVALUATION BY GROUPS (only test set)
-    indices_by_type = dataset.get_trials_by_subject_type()
+    indices_by_type = dataset.get_indices_by_subject_type()
     for k, idxs in indices_by_type.items():
         output_path = os.path.join(
             config["log_dir"],
@@ -337,7 +337,6 @@ def train(config: Dict = None) -> Trainer:
         if os.path.isfile(output_path):
             continue
 
-        print('{} indices: {}'.format(k, idxs))  # remove later
         idxs = np.intersect1d(idxs, validation_dataset.indices)
         metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
         for chunk in range(config["num_chunks"]):
