@@ -546,27 +546,28 @@ def get_config(args: argparse.Namespace = None) -> Dict:
 
 
 def get_training_partition(savedir, dataset_size, num_chunks, partition_id):
-    if not os.path.isdir(savedir):
-        os.mkdir(savedir)
+    if partition_id == 0:
+        if not os.path.isdir(savedir):
+            os.mkdir(savedir)
 
-    files = os.listdir(savedir)
+        files = os.listdir(savedir)
 
-    if len(files) == 0 and partition_id == 0:
-        np.random.seed(42)
-        idxs = np.arange(dataset_size // num_chunks)
+        if len(files) == 0:
+            np.random.seed(42)
+            idxs = np.arange(dataset_size // num_chunks)
 
-        np.random.shuffle(idxs)
+            np.random.shuffle(idxs)
 
-        trial_partition = np.array_split(idxs, 5)
+            trial_partition = np.array_split(idxs, 5)
 
-        # convert indices for trials to indices for chunks
-        for num, p in enumerate(trial_partition):
-            chunk_partition = np.array([i for x in p for i in range(x * num_chunks, (x + 1) * num_chunks)])
-            np.save(os.path.join(savedir, 'chunk_indices_partition{}'.format(num)), chunk_partition)
+            # convert indices for trials to indices for chunks
+            for num, p in enumerate(trial_partition):
+                chunk_partition = np.array([i for x in p for i in range(x * num_chunks, (x + 1) * num_chunks)])
+                np.save(os.path.join(savedir, 'chunk_indices_partition{}'.format(num)), chunk_partition)
 
-        print('\nCreating and saving new partition.\n')
+            print('\nCreating and saving new partition.\n')
 
-    elif len(files) == 0:
+    else:
         time.sleep(60)
 
     files = os.listdir(savedir)
