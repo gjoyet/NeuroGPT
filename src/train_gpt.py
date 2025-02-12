@@ -262,6 +262,8 @@ def train(config: Dict = None) -> Trainer:
                        config["log_dir"],
                        'pytorch_model.bin'
                    ))
+    else:
+        trainer.model = AutoModel.from_pretrained(config["resume_from"])
 
     # GENERAL EVALUATION
     if test_dataset is not None and not os.path.isfile(os.path.join(
