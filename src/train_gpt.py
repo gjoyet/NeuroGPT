@@ -137,46 +137,23 @@ def train(config: Dict = None) -> Trainer:
         manual_seed(config["seed"])
 
     # handles the input part, which are the output from encoder.
-
-    # TODO: check where config["training_style"] is used and see if I can just add a new training style.
-    # if config["training_style"] == 'decoding':  # decoding motion imagery
-    #     downstream_path = config["dst_data_path"]
-    #
-    #     # @Guillaume: change indexing below (from 0:18 to 1:19) to ignore file '.DS_Store' when running locally
-    #     train_folds, test_folds = cv_split_bci(sorted(os.listdir(downstream_path))[:18])
-    #     train_files = train_folds[config['fold_i']]
-    #     test_files = test_folds[config['fold_i']]
-    #
-    #     train_dataset = MotorImageryDataset(train_files, sample_keys=[
-    #         'inputs',
-    #         'attention_mask'
-    #     ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
-    #                                         root_path=downstream_path, gpt_only=not config["use_encoder"])
-    #     # pdb.set_trace()
-    #
-    #     test_dataset = MotorImageryDataset(test_files, sample_keys=[
-    #         'inputs',
-    #         'attention_mask'
-    #     ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
-    #                                        root_path=downstream_path, gpt_only=not config["use_encoder"])
-    #
-    #     validation_dataset = test_dataset
-    #     test_dataset = train_dataset
-
     dataset = None
     if config["training_style"] == 'decoding':  # decoding 2AFC
         # For now, splits train/test set across all subjects.
         # Could be modified to include subjects only in one of both sets.
         downstream_path = config["dst_data_path"]
+        filenames = sorted(os.listdir(downstream_path))
+        if config["subject_id"] != -1:
+            filenames = [fn for fn in filenames if f'subject{config["subject_id"]}_' in fn]
         if downstream_path.endswith('npz/'):
-            dataset = CHBDataset_NPZ(sorted(os.listdir(downstream_path)), sample_keys=[
+            dataset = CHBDataset_NPZ(filenames, sample_keys=[
                 'inputs',
                 'attention_mask'
             ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
                                      root_path=downstream_path, gpt_only=not config["use_encoder"],
                                      num_subjects=config["load_n_subjects"], first_chunk_idx=config["first_chunk_idx"])
         elif downstream_path.endswith('hdf5/'):
-            dataset = CHBDataset_HDF5(sorted(os.listdir(downstream_path)), sample_keys=[
+            dataset = CHBDataset_HDF5(filenames, sample_keys=[
                 'inputs',
                 'attention_mask'
             ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
@@ -187,8 +164,7 @@ def train(config: Dict = None) -> Trainer:
 
         print('Total size of dataset (i.e. number of chunks): {}\n'.format(len(dataset)))
 
-        # Split lengths (e.g., 80% train, 20% test)
-        split = 0.8
+        split = 0.75
         train_size = int(split * len(dataset))
         test_size = len(dataset) - train_size
 
@@ -268,8 +244,18 @@ def train(config: Dict = None) -> Trainer:
                 'model_final'
             )
         )
+        torch.save(trainer.model.state_dict(),
+                   os.path.join(
+                       config["log_dir"],
+                       'pytorch_model.bin'
+                   ))
 
-    if test_dataset is not None:
+    # GENERAL EVALUATION
+    if test_dataset is not None and not os.path.isfile(os.path.join(
+            config["log_dir"],
+            'test_metrics.csv'
+    )):
+
         test_prediction = trainer.predict(test_dataset)
         pd.DataFrame(
             test_prediction.metrics,
@@ -296,23 +282,27 @@ def train(config: Dict = None) -> Trainer:
             test_prediction.label_ids
         )
 
-        # TODO: could I do time-dependent evaluation also during training (to have a history?)
-        # WARNING: in test_dataset, chunks are not ordered anymore, which is why I need to select the correct indices.
-        idxs = np.array(test_dataset.indices)
+    # TIME-DEPENDENT EVALUATION (training and test sets)
+    for setting, ds in zip(['training', 'test'], [train_dataset, validation_dataset]):
+        output_path = os.path.join(
+            config["log_dir"],
+            'time_dependent_{}_metrics.csv'.format(setting)
+        )
+
+        if os.path.isfile(output_path):
+            continue
+
+        idxs = np.array(ds.indices)
         metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
         for chunk in range(config["num_chunks"]):
-            idxs_select = idxs[idxs % config["num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
+            idxs_select = idxs[idxs % config[
+                "num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
             test_prediction = trainer.predict(Subset(dataset, idxs_select))
 
             metrics['chunk_position'].append(
                 config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
             metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
             metrics['n_samples'].append(len(idxs_select))
-
-        output_path = os.path.join(
-                config["log_dir"],
-                'time_dependent_test_metrics.csv'
-            )
 
         pd.DataFrame.from_dict(
             metrics
@@ -1068,6 +1058,11 @@ def get_args() -> argparse.ArgumentParser:
     parser.add_argument('--first-chunk-idx', metavar='INT', default=501, type=int,
                         help='index in data of the start of the first chunk to be encoded '
                              '(default: 501) '
+                        )
+
+    parser.add_argument('--subject-id', metavar='INT', default=-1, type=int,
+                        help='which subject to load '
+                             '(default: -1) '
                         )
 
     return parser
