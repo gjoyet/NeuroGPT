@@ -269,7 +269,6 @@ def train(config: Dict = None) -> Trainer:
             config["log_dir"],
             'test_metrics.csv'
     )):
-
         test_prediction = trainer.predict(test_dataset)
         pd.DataFrame(
             test_prediction.metrics,
@@ -308,7 +307,8 @@ def train(config: Dict = None) -> Trainer:
 
         idxs = np.array(ds.indices)
 
-        time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset, output_path=output_path, config=config)
+        time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset, output_path=output_path,
+                                  config=config)
 
     # TIME_DEPENDENT EVALUATION BY GROUPS (only test set)
     indices_by_type = dataset.get_indices_by_subject_type()
@@ -323,7 +323,8 @@ def train(config: Dict = None) -> Trainer:
 
         idxs = np.intersect1d(idxs, validation_dataset.indices)
 
-        time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset, output_path=output_path, config=config)
+        time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset, output_path=output_path,
+                                  config=config)
 
     # TIME-DEPENDENT EVALUATION OF SINGLE SUBJECTS
     for sid in [21, 24, 40, 42, 106, 116, 206, 208]:
@@ -338,7 +339,8 @@ def train(config: Dict = None) -> Trainer:
         idxs = dataset.get_indices_of_single_subject(subject_id=sid)
         idxs = np.intersect1d(idxs, validation_dataset.indices)
 
-        time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset, output_path=output_path, config=config)
+        time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset, output_path=output_path,
+                                  config=config)
 
     # UMAP
     idxs = np.array(train_dataset.indices)
@@ -354,13 +356,19 @@ def train(config: Dict = None) -> Trainer:
             lab = [dataset[i]['labels'].item() for i in subj_idxs_select]
             labels.append(lab)
 
-            outputs = trainer.model(Subset(dataset, subj_idxs_select))
+            # TODO: CURRENT PROBLEM: model cannot take dataset as input, unlike trainer.predict()
+            subset = Subset(dataset, subj_idxs_select)
+            dataloader = torch.utils.data.DataLoader(dataset=subset, batch_size=len(subset), shuffle=False)
+
+            outputs = trainer.model(next(iter(dataloader)))
             enc = outputs['outputs']
             encodings.append(enc)
 
-        print(f'Len labels 1: {len(labels[0])}\nLen labels 2: {len(labels[1])}')
+        print(
+            f'Labels: {labels}\nLabels 1: {labels[0]}\nLabels 2: {labels[1]}\n Len labels 1: {len(labels[0])}\nLen labels 2: {len(labels[1])}')  # remove later
 
-        print(f'Dim encodings: {len(encodings)}\nDim enc: {encodings[0].size()}\nDim concat: {torch.cat(encodings).size()}')  # remove later
+        print(
+            f'Dim encodings: {len(encodings)}\nDim enc: {encodings[0].size()}\nDim concat: {torch.cat(encodings).size()}')  # remove later
 
         reducer = umap.UMAP()
         reducer.fit(torch.cat(encodings))  # make sure it concatenates along correct dimensions
@@ -377,10 +385,13 @@ def train(config: Dict = None) -> Trainer:
             dfs.append(df)
 
         combined_df = pd.concat(dfs)
-        combined_df.to_csv(os.path.join(
-            config["log_dir"],
-            'umap_subjects_{}_{}.csv'.format(*subject_pair)
-        ))
+        combined_df.to_csv(
+            os.path.join(
+                config["log_dir"],
+                'umap_subjects_{}_{}.csv'.format(*subject_pair)
+            ),
+            index=False
+        )
 
     print("Run completed successfully.")
 
