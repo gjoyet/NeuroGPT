@@ -308,7 +308,7 @@ def train(config: Dict = None) -> Trainer:
 
         idxs = np.array(ds.indices)
 
-        time_dependent_evaluation(indices=idxs, dataset=dataset, output_path=output_path, config=config)
+        time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset, output_path=output_path, config=config)
 
     # TIME_DEPENDENT EVALUATION BY GROUPS (only test set)
     indices_by_type = dataset.get_indices_by_subject_type()
@@ -323,7 +323,7 @@ def train(config: Dict = None) -> Trainer:
 
         idxs = np.intersect1d(idxs, validation_dataset.indices)
 
-        time_dependent_evaluation(indices=idxs, dataset=dataset, output_path=output_path, config=config)
+        time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset, output_path=output_path, config=config)
 
     # TIME-DEPENDENT EVALUATION OF SINGLE SUBJECTS
     for sid in [21, 24, 40, 42, 106, 116, 206, 208]:
@@ -338,7 +338,7 @@ def train(config: Dict = None) -> Trainer:
         idxs = dataset.get_indices_of_single_subject(subject_id=sid)
         idxs = np.intersect1d(idxs, validation_dataset.indices)
 
-        time_dependent_evaluation(indices=idxs, dataset=dataset, output_path=output_path, config=config)
+        time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset, output_path=output_path, config=config)
 
     # UMAP
     idxs = np.array(train_dataset.indices)
@@ -387,7 +387,7 @@ def train(config: Dict = None) -> Trainer:
     return trainer
 
 
-def time_dependent_evaluation(indices, dataset, output_path, config):
+def time_dependent_evaluation(trainer, indices, dataset, output_path, config):
     metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
     for chunk in range(config["num_chunks"]):
         idxs_select = indices[indices % config[
