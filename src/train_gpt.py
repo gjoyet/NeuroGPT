@@ -351,7 +351,7 @@ def train(config: Dict = None) -> Trainer:
             subj_idxs = dataset.get_indices_of_single_subject(subject_id=sid)
             subj_idxs_select = np.intersect1d(idxs, subj_idxs)
 
-            lab = [dataset[i][-1] for i in subj_idxs_select]
+            lab = [dataset[i]['labels'].item() for i in subj_idxs_select]
             labels.append(lab)
 
             outputs = trainer.model(Subset(dataset, subj_idxs_select))
