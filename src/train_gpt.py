@@ -343,6 +343,8 @@ def train(config: Dict = None) -> Trainer:
                                   config=config)
 
     # UMAP
+    # TODO: somewhere in the pipeline, getting the indices is not working
+    #  (subject 21 gets 229 labels, subject 24 gets 183, even though they should have 297 and 283)
     idxs = np.array(train_dataset.indices)
     idxs = idxs[idxs % config["num_chunks"] == config["num_chunks"] - 1]  # select last chunk for every trial
     for subject_pair in [(21, 24), (21, 116), (106, 116)]:
@@ -356,7 +358,6 @@ def train(config: Dict = None) -> Trainer:
             lab = [dataset[i]['labels'].item() for i in subj_idxs_select]
             labels.append(lab)
 
-            # TODO: CURRENT PROBLEM: model cannot take dataset as input, unlike trainer.predict()
             subset = Subset(dataset, subj_idxs_select)
             dataloader = torch.utils.data.DataLoader(dataset=subset, batch_size=len(subset), shuffle=False)
 
@@ -371,7 +372,7 @@ def train(config: Dict = None) -> Trainer:
             f'Dim encodings: {len(encodings)}\nDim enc: {encodings[0].size()}\nDim concat: {torch.cat(encodings).size()}')  # remove later
 
         reducer = umap.UMAP()
-        reducer.fit(torch.cat(encodings))  # make sure it concatenates along correct dimensions
+        reducer.fit(torch.cat(encodings).detach().numpy())
         embeddings = [reducer.transform(enc) for enc in encodings]
 
         dfs = []
