@@ -306,25 +306,8 @@ def train(config: Dict = None) -> Trainer:
             continue
 
         idxs = np.array(ds.indices)
-        metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
-        for chunk in range(config["num_chunks"]):
-            idxs_select = idxs[idxs % config[
-                "num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
-            test_prediction = trainer.predict(Subset(dataset, idxs_select))
 
-            metrics['chunk_position'].append(
-                config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
-            metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
-            metrics['n_samples'].append(len(idxs_select))
-
-        pd.DataFrame.from_dict(
-            metrics
-        ).to_csv(
-            output_path,
-            mode='a',
-            header=not os.path.exists(output_path),
-            index=False
-        )
+        time_dependent_evaluation(indices=idxs, dataset=dataset, output_path=output_path, config=config)
 
     # TIME_DEPENDENT EVALUATION BY GROUPS (only test set)
     indices_by_type = dataset.get_indices_by_subject_type()
@@ -338,24 +321,23 @@ def train(config: Dict = None) -> Trainer:
             continue
 
         idxs = np.intersect1d(idxs, validation_dataset.indices)
-        metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
-        for chunk in range(config["num_chunks"]):
-            idxs_select = idxs[idxs % config["num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
-            test_prediction = trainer.predict(Subset(dataset, idxs_select))
 
-            metrics['chunk_position'].append(
-                config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
-            metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
-            metrics['n_samples'].append(len(idxs_select))
+        time_dependent_evaluation(indices=idxs, dataset=dataset, output_path=output_path, config=config)
 
-        pd.DataFrame.from_dict(
-            metrics
-        ).to_csv(
-            output_path,
-            mode='a',
-            header=not os.path.exists(output_path),
-            index=False
+    # TIME-DEPENDENT EVALUATION OF SINGLE SUBJECTS
+    for sid in [21, 24, 40, 42, 106, 116, 206, 208]:
+        output_path = os.path.join(
+            config["log_dir"],
+            'time_dependent_test_metrics_only_subj{}.csv'.format(sid)
         )
+
+        if os.path.isfile(output_path):
+            continue
+
+        idxs = dataset.get_indices_of_single_subject(subject_id=sid)
+        idxs = np.intersect1d(idxs, validation_dataset.indices)
+
+        time_dependent_evaluation(indices=idxs, dataset=dataset, output_path=output_path, config=config)
 
     # TODO: UMAP (on training set)
 
@@ -366,6 +348,28 @@ def train(config: Dict = None) -> Trainer:
     print("Run completed successfully.")
 
     return trainer
+
+
+def time_dependent_evaluation(indices, dataset, output_path, config):
+    metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
+    for chunk in range(config["num_chunks"]):
+        idxs_select = indices[indices % config[
+            "num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
+        test_prediction = trainer.predict(Subset(dataset, idxs_select))
+
+        metrics['chunk_position'].append(
+            config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
+        metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
+        metrics['n_samples'].append(len(idxs_select))
+
+    pd.DataFrame.from_dict(
+        metrics
+    ).to_csv(
+        output_path,
+        mode='a',
+        header=not os.path.exists(output_path),
+        index=False
+    )
 
 
 def make_model(model_config: Dict = None):
