@@ -31,13 +31,14 @@ dependencies:
   - regex=2024.11.6
   - requests=2.32.3
   - safetensors=0.4.5
-  - seaborn
+  - seaborn=0.13.2
   - scikit-learn=1.4.0
   - scipy=1.12.0
   - six=1.16.0
   - sympy=1.13.1
   - threadpoolctl=3.5.0
   - tokenizers=0.19.1
+  - umap=0.1.1
   - pytorch=2.5.1
   - torchaudio=2.5.1
   - torchinfo=1.8.0

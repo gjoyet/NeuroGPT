@@ -42,6 +42,7 @@ from datetime import datetime
 from numpy import random
 import pandas as pd
 import numpy as np
+import umap
 from encoder.conformer_braindecode import EEGConformer
 from torch import manual_seed
 from torch.utils.data import random_split, Subset
@@ -339,11 +340,47 @@ def train(config: Dict = None) -> Trainer:
 
         time_dependent_evaluation(indices=idxs, dataset=dataset, output_path=output_path, config=config)
 
-    # TODO: UMAP (on training set)
+    # UMAP
+    idxs = np.array(train_dataset.indices)
+    idxs = idxs[idxs % config["num_chunks"] == config["num_chunks"] - 1]  # select last chunk for every trial
+    for subject_pair in [(21, 24), (21, 116), (106, 116)]:
+        labels = []
+        encodings = []
 
-    # TODO: evaluate(!) single subjects (check if it is more stable than MVPA)
-    #  choose the same subjects as the ones I will train(!) models on separately.
-    #  e.g. from MVPA: [21, 24, 40, 42, 106, 116, 206, 208]
+        for sid in subject_pair:
+            subj_idxs = dataset.get_indices_of_single_subject(subject_id=sid)
+            subj_idxs_select = np.intersect1d(idxs, subj_idxs)
+
+            lab = [dataset[i][-1] for i in subj_idxs_select]
+            labels.append(lab)
+
+            outputs = trainer.model(Subset(dataset, subj_idxs_select))
+            enc = outputs['outputs']
+            encodings.append(enc)
+
+        print(f'Len labels 1: {len(labels[0])}\nLen labels 2: {len(labels[1])}')
+
+        print(f'Dim encodings: {len(encodings)}\nDim enc: {encodings[0].size()}\nDim concat: {torch.cat(encodings).size()}')  # remove later
+
+        reducer = umap.UMAP()
+        reducer.fit(torch.cat(encodings))  # make sure it concatenates along correct dimensions
+        embeddings = [reducer.transform(enc) for enc in encodings]
+
+        dfs = []
+        for i, sid in enumerate(subject_pair):
+            df = pd.DataFrame({
+                "Subject ID": sid,
+                "x_embed": embeddings[i][:, 0],
+                "y_embed": embeddings[i][:, 1],  # First column from array
+                "Label": labels[i]  # Second column from array
+            })
+            dfs.append(df)
+
+        combined_df = pd.concat(dfs)
+        combined_df.to_csv(os.path.join(
+            config["log_dir"],
+            'umap_subjects_{}_{}.csv'.format(*subject_pair)
+        ))
 
     print("Run completed successfully.")
 
