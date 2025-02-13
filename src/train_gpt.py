@@ -345,7 +345,7 @@ def train(config: Dict = None) -> Trainer:
     # UMAP
     # TODO: somewhere in the pipeline, getting the indices is not working
     #  (subject 21 gets 229 labels, subject 24 gets 183, even though they should have 297 and 283)
-    print(f'Len dataset. {len(dataset)}\Len train_ds: {len(train_dataset)}\nLen val_ds: {len(validation_dataset)}')
+    print(f'\nLen dataset. {len(dataset)}\Len train_ds: {len(train_dataset)}\nLen val_ds: {len(validation_dataset)}')
     idxs = np.array(train_dataset.indices)
     print(f'Len idxs: {len(idxs)}')
     idxs = idxs[idxs % config["num_chunks"] == config["num_chunks"] - 1]  # select last chunk for every trial
@@ -356,9 +356,9 @@ def train(config: Dict = None) -> Trainer:
 
         for sid in subject_pair:
             subj_idxs = dataset.get_indices_of_single_subject(subject_id=sid)
-            print(f'Len subj_idxs: {len(subj_idxs)}')
+            print(f'\nLen subj_idxs: {len(subj_idxs)}')
             subj_idxs_select = np.intersect1d(idxs, subj_idxs)
-            print(f'Len subj_idxs_select: {len(subj_idxs_select)}')
+            print(f'subj_idxs_select: {subj_idxs_select}\nLen subj_idxs_select: {len(subj_idxs_select)}')
 
             lab = [dataset[i]['labels'].item() for i in subj_idxs_select]
             labels.append(lab)
@@ -371,7 +371,7 @@ def train(config: Dict = None) -> Trainer:
             encodings.append(enc)
 
         print(
-            f'Labels: {labels}\nLabels 1: {labels[0]}\nLabels 2: {labels[1]}\n Len labels 1: {len(labels[0])}\nLen labels 2: {len(labels[1])}')  # remove later
+            f'\nLabels: {labels}\nLabels 1: {labels[0]}\nLabels 2: {labels[1]}\n Len labels 1: {len(labels[0])}\nLen labels 2: {len(labels[1])}')  # remove later
 
         print(
             f'Dim encodings: {len(encodings)}\nDim enc: {encodings[0].size()}\nDim concat: {torch.cat(encodings).size()}')  # remove later
