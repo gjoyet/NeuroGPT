@@ -371,8 +371,8 @@ def train(config: Dict = None) -> Trainer:
             df = pd.DataFrame({
                 "Subject ID": sid,
                 "x_embed": embeddings[i][:, 0],
-                "y_embed": embeddings[i][:, 1],  # First column from array
-                "Label": labels[i]  # Second column from array
+                "y_embed": embeddings[i][:, 1],
+                "Label": labels[i]
             })
             dfs.append(df)
 
