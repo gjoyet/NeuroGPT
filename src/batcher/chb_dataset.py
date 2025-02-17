@@ -83,6 +83,7 @@ class CHBDataset_HDF5(EEGDataset):
     # TODO: implement this
     def get_indices_of_single_subject(self, subject_id):
         idx = [i for i, s in enumerate(self.filenames) if f'subject{subject_id}_' in s][0]
+        print(f'Filename: {self.filenames[idx]}\ncumnum_trials[idx]: {self.cumnum_trials[idx]}\ncumnum_trials[idx+1]: {self.cumnum_trials[idx+1]}\nnum_trials_per_sub[idxs]: {self.num_trials_per_sub[idx]}')
         return range(self.cumnum_trials[idx] * self.num_chunks, self.cumnum_trials[idx+1] * self.num_chunks)
 
     def __len__(self):
