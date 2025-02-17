@@ -388,7 +388,7 @@ def train(config: Dict = None) -> Trainer:
                 combined_df.to_csv(
                     os.path.join(
                         config["log_dir"],
-                        'umap_subjects_{}_{}_{}nn_{}md.csv'.format(*subject_pair, nn, md)
+                        'umap_subjects-{}-{}_{}nn_{}md.csv'.format(*subject_pair, nn, md)
                     ),
                     index=False
                 )
