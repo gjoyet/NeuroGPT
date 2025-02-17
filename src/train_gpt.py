@@ -347,7 +347,7 @@ def train(config: Dict = None) -> Trainer:
     #  (subject 21 gets 229 labels, subject 24 gets 183, even though they should have 297 and 283)
     with torch.no_grad():
         trainer.model.eval()
-        print(f'\nLen dataset. {len(dataset)}\nLen train_ds: {len(train_dataset)}\nLen val_ds: {len(validation_dataset)}')
+        print(f'\nLen dataset: {len(dataset)}\nLen train_ds: {len(train_dataset)}\nLen val_ds: {len(validation_dataset)}')
         idxs = np.array(train_dataset.indices)
         print(f'Len idxs: {len(idxs)}')
         idxs = idxs[idxs % config["num_chunks"] == config["num_chunks"] - 1]  # select last chunk for every trial
