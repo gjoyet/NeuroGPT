@@ -19,7 +19,6 @@ def plot_results(results_folder_path):
     models.sort()
 
     model_groups = defaultdict(list)
-
     for m in models:
         # Replace any single digit with a placeholder (e.g., '#')
         template = re.sub(r'(?<=partition)\d', '#', m)  # Replace only the first digit occurrence
@@ -53,7 +52,7 @@ def plot_results(results_folder_path):
                 run = 'not-pretrained-' + run
             plt.title(run)
 
-            plt.savefig(os.path.join('../results/', 'plots', f'{run}_{fn[15:]}.png'))
+            plt.savefig(os.path.join('../results', 'plots', f'{run}_{fn[15:]}.png'))
 
             # TODO: joint plot
             # add columns indicating 'group' and 'training/test' in combined_df, append it to all_data
@@ -64,44 +63,37 @@ def plot_umap(results_folder_path):
     filenames = os.listdir(results_folder_path)
     umap_files = [f for f in filenames if 'umap' in f]
 
+    file_groups = defaultdict(list)
+    # Group by the common prefix (everything before the first underscore after 'umap_subjects-X-Y')
     for uf in umap_files:
-        df = pd.read_csv(os.path.join(results_folder_path, uf))
+        prefix = "_".join(uf.split("_")[:3])  # Extracts 'umap_subjects-X-Y'
+        file_groups[prefix].append(uf)
 
-        for colouring in ['Subject ID', 'Label']:
+    for group_name, fg in file_groups:
+        group_dir = os.path.join('../results', 'plots', group_name)
+        if not os.path.isdir(group_dir):
+            os.mkdir(group_dir)
+
+        for uf in fg:
+            df = pd.read_csv(os.path.join(results_folder_path, uf))
+
             # Create a seaborn lineplot, passing the matrix directly to seaborn
             plt.figure(figsize=(10, 6))  # Optional: Set the figure size
 
             # Create the lineplot, seaborn will automatically calculate confidence intervals
-            sns.scatterplot(data=df, x='x_embed', y='y_embed',
-                            hue=df[colouring].map({df[colouring].min(): 0, df[colouring].max(): 1}))
+            sns.scatterplot(data=df, x='x_embed', y='y_embed', hue='Label', style='Subject ID', alpha=0.5)
             sns.despine()
 
             # Set plot labels and title
-            plt.legend(title=colouring)
+            plt.legend()
 
-            c = 'subjID' if colouring == 'Subject ID' else 'label'
-            plt.savefig(os.path.join('../results/', 'plots', f'{uf[:-4]}_{c}.png'))
-
-        # Create a seaborn lineplot, passing the matrix directly to seaborn
-        plt.figure(figsize=(10, 6))  # Optional: Set the figure size
-
-        # Create the lineplot, seaborn will automatically calculate confidence intervals
-        sns.scatterplot(data=df, x='x_embed', y='y_embed', hue='Label', style='Subject ID')
-        sns.despine()
-
-        # Set plot labels and title
-        plt.legend()
-
-        c = 'subjID' if colouring == 'Subject ID' else 'label'
-        plt.savefig(os.path.join('../results/', 'plots', f'{uf[:-4]}_combined.png'))
+            plt.savefig(os.path.join(group_dir, f'{uf[:-4]}_combined.png'))
 
 
 if __name__ == '__main__':
-    results_folder = '/Users/joyet/Documents/Documents - Guillaume’s MacBook Pro/UniBasel/MSc_Data_Science/Master ' \
-                     'Thesis/Code/NeuroGPT/results/models/upstream'
-    if not os.path.isdir('/Users/joyet/Documents/Documents - Guillaume’s MacBook Pro/UniBasel/MSc_Data_Science/Master '
-                         'Thesis/Code/NeuroGPT/results/plots'):
-        os.mkdir('/Users/joyet/Documents/Documents - Guillaume’s MacBook Pro/UniBasel/MSc_Data_Science/Master '
-                 'Thesis/Code/NeuroGPT/results/plots')
+    results_folder = '../results/models/upstream'
+    plots_folder = '../results/plots'
+    if not os.path.isdir(plots_folder):
+        os.mkdir(plots_folder)
     plot_results(results_folder_path=results_folder)
     plot_umap(results_folder_path=os.path.join(results_folder, 'test-0'))

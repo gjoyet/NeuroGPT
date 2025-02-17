@@ -370,7 +370,7 @@ def train(config: Dict = None) -> Trainer:
 
             for nn, md in itertools.product([10, 15, 20], [0.0, 0.1, 0.25]):
 
-                reducer = umap.UMAP(n_neighbours=nn, min_dist=md)
+                reducer = umap.UMAP(n_neighbors=nn, min_dist=md)
                 reducer.fit(torch.cat(encodings).detach().numpy())
                 embeddings = [reducer.transform(enc.detach().numpy()) for enc in encodings]
 
