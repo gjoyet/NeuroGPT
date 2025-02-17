@@ -53,6 +53,7 @@ def plot_results(results_folder_path):
             plt.title(run)
 
             plt.savefig(os.path.join('../results', 'plots', f'{run}_{fn[15:]}.png'))
+            plt.close()
 
             # TODO: joint plot
             # add columns indicating 'group' and 'training/test' in combined_df, append it to all_data
@@ -66,10 +67,10 @@ def plot_umap(results_folder_path):
     file_groups = defaultdict(list)
     # Group by the common prefix (everything before the first underscore after 'umap_subjects-X-Y')
     for uf in umap_files:
-        prefix = "_".join(uf.split("_")[:3])  # Extracts 'umap_subjects-X-Y'
+        prefix = "_".join(uf.split("_")[:2])  # Extracts 'umap_subjects-X-Y'
         file_groups[prefix].append(uf)
 
-    for group_name, fg in file_groups:
+    for group_name, fg in file_groups.items():
         group_dir = os.path.join('../results', 'plots', group_name)
         if not os.path.isdir(group_dir):
             os.mkdir(group_dir)
@@ -87,7 +88,8 @@ def plot_umap(results_folder_path):
             # Set plot labels and title
             plt.legend()
 
-            plt.savefig(os.path.join(group_dir, f'{uf[:-4]}_combined.png'))
+            plt.savefig(os.path.join(group_dir, f'{uf[:-4]}.png'))
+            plt.close()
 
 
 if __name__ == '__main__':
@@ -96,4 +98,4 @@ if __name__ == '__main__':
     if not os.path.isdir(plots_folder):
         os.mkdir(plots_folder)
     plot_results(results_folder_path=results_folder)
-    plot_umap(results_folder_path=os.path.join(results_folder, 'test-0'))
+    plot_umap(results_folder_path=os.path.join(results_folder, 'umap-0'))

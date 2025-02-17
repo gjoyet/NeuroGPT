@@ -368,7 +368,7 @@ def train(config: Dict = None) -> Trainer:
                 enc = outputs['outputs']
                 encodings.append(enc)
 
-            for nn, md in itertools.product([10, 15, 20], [0.0, 0.1, 0.25]):
+            for nn, md in itertools.product([3, 5, 10, 15, 20], [0.1, 0.25, 1, 2.5]):
 
                 reducer = umap.UMAP(n_neighbors=nn, min_dist=md)
                 reducer.fit(torch.cat(encodings).detach().numpy())
