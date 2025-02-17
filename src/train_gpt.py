@@ -48,6 +48,7 @@ from torch import manual_seed
 from torch.utils.data import random_split, Subset
 from transformers import AutoModel
 import sys
+import itertools
 
 from utils import cv_split_bci, read_threshold_sub
 
@@ -367,28 +368,30 @@ def train(config: Dict = None) -> Trainer:
                 enc = outputs['outputs']
                 encodings.append(enc)
 
-            reducer = umap.UMAP()
-            reducer.fit(torch.cat(encodings).detach().numpy())
-            embeddings = [reducer.transform(enc.detach().numpy()) for enc in encodings]
+            for nn, md in itertools.product([10, 15, 20], [0.0, 0.1, 0.25]):
 
-            dfs = []
-            for i, sid in enumerate(subject_pair):
-                df = pd.DataFrame({
-                    "Subject ID": sid,
-                    "x_embed": embeddings[i][:, 0],
-                    "y_embed": embeddings[i][:, 1],
-                    "Label": labels[i]
-                })
-                dfs.append(df)
+                reducer = umap.UMAP(n_neighbours=nn, min_dist=md)
+                reducer.fit(torch.cat(encodings).detach().numpy())
+                embeddings = [reducer.transform(enc.detach().numpy()) for enc in encodings]
 
-            combined_df = pd.concat(dfs)
-            combined_df.to_csv(
-                os.path.join(
-                    config["log_dir"],
-                    'umap_subjects_{}_{}.csv'.format(*subject_pair)
-                ),
-                index=False
-            )
+                dfs = []
+                for i, sid in enumerate(subject_pair):
+                    df = pd.DataFrame({
+                        "Subject ID": sid,
+                        "x_embed": embeddings[i][:, 0],
+                        "y_embed": embeddings[i][:, 1],
+                        "Label": labels[i]
+                    })
+                    dfs.append(df)
+
+                combined_df = pd.concat(dfs)
+                combined_df.to_csv(
+                    os.path.join(
+                        config["log_dir"],
+                        'umap_subjects_{}_{}_{}nn_{}md.csv'.format(*subject_pair, nn, md)
+                    ),
+                    index=False
+                )
 
     print("Run completed successfully.")
 
