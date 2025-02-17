@@ -347,20 +347,15 @@ def train(config: Dict = None) -> Trainer:
     #  (subject 21 gets 229 labels, subject 24 gets 183, even though they should have 297 and 283)
     with torch.no_grad():
         trainer.model.eval()
-        print(f'\nLen dataset: {len(dataset)}\nLen train_ds: {len(train_dataset)}\nLen val_ds: {len(validation_dataset)}')
         idxs = np.array(train_dataset.indices)
-        print(f'Len idxs: {len(idxs)}')
         idxs = idxs[idxs % config["num_chunks"] == config["num_chunks"] - 1]  # select last chunk for every trial
-        print(f'Len idxs: {len(idxs)}')
         for subject_pair in [(21, 24), (21, 116), (106, 116)]:
             labels = []
             encodings = []
 
             for sid in subject_pair:
                 subj_idxs = dataset.get_indices_of_single_subject(subject_id=sid)
-                print(f'\nLen subj_idxs: {len(subj_idxs)}')
                 subj_idxs_select = np.intersect1d(idxs, subj_idxs)
-                print(f'subj_idxs_select: {subj_idxs_select}\nLen subj_idxs_select: {len(subj_idxs_select)}')
 
                 lab = [dataset[i]['labels'].item() for i in subj_idxs_select]
                 labels.append(lab)
@@ -371,12 +366,6 @@ def train(config: Dict = None) -> Trainer:
                 outputs = trainer.model(next(iter(dataloader)))
                 enc = outputs['outputs']
                 encodings.append(enc)
-
-            print(
-                f'\nLabels: {labels}\nLabels 1: {labels[0]}\nLabels 2: {labels[1]}\n Len labels 1: {len(labels[0])}\nLen labels 2: {len(labels[1])}')  # remove later
-
-            print(
-                f'Dim encodings: {len(encodings)}\nDim enc: {encodings[0].size()}\nDim concat: {torch.cat(encodings).size()}')  # remove later
 
             reducer = umap.UMAP()
             reducer.fit(torch.cat(encodings).detach().numpy())
