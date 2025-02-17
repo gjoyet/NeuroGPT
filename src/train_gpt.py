@@ -183,6 +183,9 @@ def train(config: Dict = None) -> Trainer:
         training_indices = np.concatenate([p for i, p in enumerate(partition) if i != partition_id])
         test_indices = partition[partition_id]
 
+        # select last chunk for every trial
+        training_indices = training_indices[training_indices % config["num_chunks"] == config["num_chunks"] - 1]
+
         train_dataset = Subset(dataset, training_indices)
         test_dataset = Subset(dataset, test_indices)
 
@@ -327,21 +330,21 @@ def train(config: Dict = None) -> Trainer:
         time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset, output_path=output_path,
                                   config=config)
 
-    # TIME-DEPENDENT EVALUATION OF SINGLE SUBJECTS
-    for sid in [21, 24, 40, 42, 106, 116, 206, 208]:
-        output_path = os.path.join(
-            config["log_dir"],
-            'time_dependent_test_metrics_only_subj{}.csv'.format(sid)
-        )
-
-        if os.path.isfile(output_path):
-            continue
-
-        idxs = dataset.get_indices_of_single_subject(subject_id=sid)
-        idxs = np.intersect1d(idxs, validation_dataset.indices)
-
-        time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset, output_path=output_path,
-                                  config=config)
+    # # TIME-DEPENDENT EVALUATION OF SINGLE SUBJECTS
+    # for sid in [21, 24, 40, 42, 106, 116, 206, 208]:
+    #     output_path = os.path.join(
+    #         config["log_dir"],
+    #         'time_dependent_test_metrics_only_subj{}.csv'.format(sid)
+    #     )
+    #
+    #     if os.path.isfile(output_path):
+    #         continue
+    #
+    #     idxs = dataset.get_indices_of_single_subject(subject_id=sid)
+    #     idxs = np.intersect1d(idxs, validation_dataset.indices)
+    #
+    #     time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset, output_path=output_path,
+    #                               config=config)
 
     # UMAP
     # TODO: somewhere in the pipeline, getting the indices is not working
