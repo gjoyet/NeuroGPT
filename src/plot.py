@@ -72,8 +72,10 @@ def plot_umap(results_folder_path):
             # Create a seaborn lineplot, passing the matrix directly to seaborn
             plt.figure(figsize=(10, 6))  # Optional: Set the figure size
 
-            # Create the lineplot, seaborn will automatically calculate confidence intervals
-            sns.scatterplot(data=df, x='x_embed', y='y_embed', hue='Label', style='Subject ID', alpha=0.5)
+            custom_palette = {df["Subject ID"].min(): sns.color_palette()[0],
+                              df["Subject ID"].max(): sns.color_palette()[1]}
+            sns.scatterplot(data=df, x='x_embed', y='y_embed', hue='Subject ID',
+                            style='Label', alpha=0.75, palette=custom_palette)
             sns.despine()
 
             # Set plot labels and title
