@@ -381,12 +381,14 @@ def train(config: Dict = None) -> Trainer:
                 # TODO: fix this. Outputs are actually only logits. Need the encodings.  # remove later
                 print(f'Outputs shape: {outputs.size()}')  # remove later
                 test = outputs.contiguous().view(outputs.size(0), -1)
-                print(f'Test: {test.size()}')
+                print(f'Test outputs: {test.size()}')
                 encodings.append(outputs.contiguous().view(outputs.size(0), -1))
 
             for nn, md in itertools.product([3, 5, 10, 15, 20], [0.1, 0.25, 0.5]):
 
                 reducer = umap.UMAP(n_neighbors=nn, min_dist=md)
+                test = torch.cat(encodings)
+                print(f'Test cat: {test.size()}')
                 reducer.fit(torch.cat(encodings).detach().numpy())
                 embeddings = [reducer.transform(enc.detach().numpy()) for enc in encodings]
 
