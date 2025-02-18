@@ -391,8 +391,8 @@ def train(config: Dict = None) -> Trainer:
                 print(f'Test cat: {test.size()}')
                 reducer.fit(torch.cat(encodings).detach().numpy())
                 embeddings = [reducer.transform(enc.detach().numpy()) for enc in encodings]
-                print(len(embeddings), len(embeddings[0]))
-                print(f'Embeddings size: {embeddings.shape}')
+                print(len(embeddings), len(embeddings[0]), len(embeddings[1]), len(embeddings[0][0]))
+                print(f'Embeddings size: {embeddings[0].size()}')
 
                 dfs = []
                 for i, sid in enumerate(subject_pair):
