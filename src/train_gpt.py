@@ -347,8 +347,6 @@ def train(config: Dict = None) -> Trainer:
     #                               config=config)
 
     # UMAP
-    # TODO: somewhere in the pipeline, getting the indices is not working
-    #  (subject 21 gets 229 labels, subject 24 gets 183, even though they should have 297 and 283)
     with torch.no_grad():
         trainer.model.eval()
         idxs = np.array(train_dataset.indices)
