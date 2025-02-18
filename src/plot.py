@@ -9,11 +9,10 @@ import pandas as pd
 matplotlib.use('macOSX')
 
 
-# TODO: test this (locally!)
 def plot_results(results_folder_path):
     models = os.listdir(results_folder_path)
 
-    pattern = r"^(not-pretrained-)?(trialCV|subjCV)(-partition\d+)?(-.*)?$"
+    pattern = r"^(not-pretrained-)?(trialCV|subjCV)(-partition\d+)?(-.*)?|^train-only(-.*)?$"
     models = [s for s in models if re.match(pattern, s)]
 
     models.sort()
@@ -27,6 +26,9 @@ def plot_results(results_folder_path):
     for group_name, mg in model_groups.items():
         for fn in ['time_dependent_training_metrics',
                    'time_dependent_test_metrics']:  # later add 'scz', 'hc'
+            if group_name.startswith('train-only') and 'training' in fn:
+                continue
+
             dfs = [pd.read_csv(os.path.join(results_folder_path, m, f'{fn}.csv')) for m in mg]
 
             combined_df = pd.concat(dfs)  # Merge all data into one DataFrame
@@ -54,10 +56,6 @@ def plot_results(results_folder_path):
 
             plt.savefig(os.path.join('../results', 'plots', f'{run}_{fn[15:]}.png'))
             plt.close()
-
-            # TODO: joint plot
-            # add columns indicating 'group' and 'training/test' in combined_df, append it to all_data
-            # plot again, with hue (or whatever) set to 'group', one for training, one for test
 
 
 def plot_umap(results_folder_path):
