@@ -375,7 +375,7 @@ def train(config: Dict = None) -> Trainer:
                 # inputs = batch[0]
                 print(f'Batch: {batch.size()}')  # \nInputs: {inputs.size()}
 
-                outputs = trainer.model.encoder(inputs)
+                outputs = trainer.model.encoder(batch)
                 # TODO: fix this. Outputs are actually only logits. Need the encodings.
                 print(f'Outputs shape: {outputs.size()}')
                 encodings.append(outputs)
