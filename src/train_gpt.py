@@ -373,7 +373,7 @@ def train(config: Dict = None) -> Trainer:
 
                 batch = next(iter(dataloader))
                 # inputs = batch[0]
-                print(f'Batch: {batch.size()}')  # \nInputs: {inputs.size()}
+                print(f'Batch: \n{batch.keys()}\n{batch.values()}')  # \nInputs: {inputs.size()}
 
                 outputs = trainer.model.encoder(batch)
                 # TODO: fix this. Outputs are actually only logits. Need the encodings.
