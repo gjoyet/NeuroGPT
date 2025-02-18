@@ -372,10 +372,10 @@ def train(config: Dict = None) -> Trainer:
                 dataloader = torch.utils.data.DataLoader(dataset=subset, batch_size=len(subset), shuffle=False)
 
                 batch = next(iter(dataloader))
-                # inputs = batch[0]
-                print(f'Batch: \n{batch.keys()}\n{batch.values()}')  # \nInputs: {inputs.size()}
+                sizzles = batch["inputs"].size()
+                print(f'Batch: \n{batch.keys()}\n{sizzles}')
 
-                outputs = trainer.model.encoder(batch)
+                outputs = trainer.model.encoder(batch["inputs"])
                 # TODO: fix this. Outputs are actually only logits. Need the encodings.
                 print(f'Outputs shape: {outputs.size()}')
                 encodings.append(outputs)
