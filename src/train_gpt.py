@@ -349,6 +349,7 @@ def train(config: Dict = None) -> Trainer:
             os.mkdir(os.path.join(config["log_dir"], 'umap'))
 
         trainer.model.eval()
+        print(f'fc length: {trainer.model.encoder.get_fc_size()}')  # remove later
         trainer.model.encoder.is_decoding_mode = False
 
         idxs = np.array(train_dataset.indices)
@@ -379,7 +380,7 @@ def train(config: Dict = None) -> Trainer:
                 outputs = trainer.model.encoder(batch["inputs"])
                 # TODO: fix this. Outputs are actually only logits. Need the encodings.  # remove later
                 print(f'Outputs shape: {outputs.size()}')  # remove later
-                encodings.append(outputs)
+                encodings.append(outputs.contiguous().view(outputs.size(0), -1))
 
             for nn, md in itertools.product([3, 5, 10, 15, 20], [0.1, 0.25, 0.5]):
 
