@@ -61,22 +61,15 @@ def plot_results(results_folder_path):
 
 
 def plot_umap(results_folder_path):
-    filenames = os.listdir(results_folder_path)
-    umap_files = [f for f in filenames if 'umap' in f]
+    directories = os.listdir(results_folder_path)
 
-    file_groups = defaultdict(list)
-    # Group by the common prefix (everything before the first underscore after 'umap_subjects-X-Y')
-    for uf in umap_files:
-        prefix = "_".join(uf.split("_")[:2])  # Extracts 'umap_subjects-X-Y'
-        file_groups[prefix].append(uf)
+    for dir in directories:
+        plot_dir = os.path.join('../results', 'plots', dir)
+        if not os.path.isdir(plot_dir):
+            os.mkdir(plot_dir)
 
-    for group_name, fg in file_groups.items():
-        group_dir = os.path.join('../results', 'plots', group_name)
-        if not os.path.isdir(group_dir):
-            os.mkdir(group_dir)
-
-        for uf in fg:
-            df = pd.read_csv(os.path.join(results_folder_path, uf))
+        for file in os.listdir(dir):
+            df = pd.read_csv(os.path.join(results_folder_path, file))
 
             # Create a seaborn lineplot, passing the matrix directly to seaborn
             plt.figure(figsize=(10, 6))  # Optional: Set the figure size
@@ -88,7 +81,7 @@ def plot_umap(results_folder_path):
             # Set plot labels and title
             plt.legend()
 
-            plt.savefig(os.path.join(group_dir, f'{uf[:-4]}.png'))
+            plt.savefig(os.path.join(plot_dir, f'{file[:-4]}.png'))
             plt.close()
 
 
@@ -98,4 +91,4 @@ if __name__ == '__main__':
     if not os.path.isdir(plots_folder):
         os.mkdir(plots_folder)
     plot_results(results_folder_path=results_folder)
-    plot_umap(results_folder_path=os.path.join(results_folder, 'umap-0'))
+    plot_umap(results_folder_path=os.path.join(results_folder, 'umap-0', 'umap'))
