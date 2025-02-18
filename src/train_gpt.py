@@ -380,6 +380,8 @@ def train(config: Dict = None) -> Trainer:
                 outputs = trainer.model.encoder(batch["inputs"])
                 # TODO: fix this. Outputs are actually only logits. Need the encodings.  # remove later
                 print(f'Outputs shape: {outputs.size()}')  # remove later
+                test = outputs.contiguous().view(outputs.size(0), -1)
+                print(f'Test: {test.size()}')
                 encodings.append(outputs.contiguous().view(outputs.size(0), -1))
 
             for nn, md in itertools.product([3, 5, 10, 15, 20], [0.1, 0.25, 0.5]):
