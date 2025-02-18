@@ -351,7 +351,11 @@ def train(config: Dict = None) -> Trainer:
         trainer.model.eval()
         idxs = np.array(train_dataset.indices)
         idxs = idxs[idxs % config["num_chunks"] == config["num_chunks"] - 1]  # select last chunk for every trial
+
         for subject_pair in [(21, 24), (21, 116), (106, 116)]:
+            if not os.path.isdir(os.path.join(config["log_dir"], 'umap', 'umap_subjects-{}-{}'.format(*subject_pair))):
+                os.mkdir(os.path.join(config["log_dir"], 'umap', 'umap_subjects-{}-{}'.format(*subject_pair)))
+
             labels = []
             encodings = []
 
@@ -390,6 +394,7 @@ def train(config: Dict = None) -> Trainer:
                     os.path.join(
                         config["log_dir"],
                         'umap',
+                        'umap_subjects-{}-{}'.format(*subject_pair),
                         'umap_subjects-{}-{}_{}nn_{}md.csv'.format(*subject_pair, nn, md)
                     ),
                     index=False
