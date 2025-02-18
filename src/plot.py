@@ -61,13 +61,13 @@ def plot_results(results_folder_path):
 def plot_umap(results_folder_path):
     directories = os.listdir(results_folder_path)
 
-    for dir in directories:
-        plot_dir = os.path.join('../results', 'plots', dir)
+    for direc in directories:
+        plot_dir = os.path.join('../results', 'plots', direc)
         if not os.path.isdir(plot_dir):
             os.mkdir(plot_dir)
 
-        for file in os.listdir(dir):
-            df = pd.read_csv(os.path.join(results_folder_path, file))
+        for file in os.listdir(os.path.join(results_folder_path, direc)):
+            df = pd.read_csv(os.path.join(results_folder_path, direc, file))
 
             # Create a seaborn lineplot, passing the matrix directly to seaborn
             plt.figure(figsize=(10, 6))  # Optional: Set the figure size
