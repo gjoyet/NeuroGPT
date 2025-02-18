@@ -300,17 +300,17 @@ def train(config: Dict = None) -> Trainer:
         )
 
     # TIME-DEPENDENT EVALUATION (training and test sets)
-    for setting, ds in zip(['training', 'test'], [train_dataset, validation_dataset]):
-        output_path = os.path.join(
-            config["log_dir"],
-            'time_dependent_{}_metrics.csv'.format(setting)
-        )
+    # evaluation on training set does not make sense here.
+    setting = 'test'
+    ds = validation_dataset
 
-        if os.path.isfile(output_path):
-            continue
+    output_path = os.path.join(
+        config["log_dir"],
+        'time_dependent_{}_metrics.csv'.format(setting)
+    )
 
+    if not os.path.isfile(output_path):
         idxs = np.array(ds.indices)
-
         time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset, output_path=output_path,
                                   config=config)
 
