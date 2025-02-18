@@ -352,9 +352,15 @@ def train(config: Dict = None) -> Trainer:
             os.mkdir(os.path.join(config["log_dir"], 'umap'))
 
         trainer.model.eval()
+        trainer.model.encoder.is_decoding_mode = False
+
         idxs = np.array(train_dataset.indices)
         idxs = idxs[idxs % config["num_chunks"] == config["num_chunks"] - 1]  # select last chunk for every trial
+
         for subject_pair in [(21, 24), (21, 116), (106, 116)]:
+            if not os.path.isdir(os.path.join(config["log_dir"], 'umap', 'umap_subjects-{}-{}'.format(*subject_pair))):
+                os.mkdir(os.path.join(config["log_dir"], 'umap', 'umap_subjects-{}-{}'.format(*subject_pair)))
+
             labels = []
             encodings = []
 
@@ -368,12 +374,12 @@ def train(config: Dict = None) -> Trainer:
                 subset = Subset(dataset, subj_idxs_select)
                 dataloader = torch.utils.data.DataLoader(dataset=subset, batch_size=len(subset), shuffle=False)
 
-                outputs = trainer.model(next(iter(dataloader)))
-                enc = outputs['outputs']
-                encodings.append(enc)
+                batch = next(iter(dataloader))
+                outputs = trainer.model.encoder(batch["inputs"])
 
-            for nn, md in itertools.product([10, 15, 20], [0.0, 0.1, 0.25]):
+                encodings.append(outputs.contiguous().view(outputs.size(0), -1))
 
+            for nn, md in itertools.product([3, 5, 10, 15, 20], [0.1, 0.25, 0.5]):
                 reducer = umap.UMAP(n_neighbors=nn, min_dist=md)
                 reducer.fit(torch.cat(encodings).detach().numpy())
                 embeddings = [reducer.transform(enc.detach().numpy()) for enc in encodings]
@@ -393,6 +399,7 @@ def train(config: Dict = None) -> Trainer:
                     os.path.join(
                         config["log_dir"],
                         'umap',
+                        'umap_subjects-{}-{}'.format(*subject_pair),
                         'umap_subjects-{}-{}_{}nn_{}md.csv'.format(*subject_pair, nn, md)
                     ),
                     index=False

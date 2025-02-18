@@ -9,11 +9,10 @@ import pandas as pd
 matplotlib.use('macOSX')
 
 
-# TODO: test this (locally!)
 def plot_results(results_folder_path):
     models = os.listdir(results_folder_path)
 
-    pattern = r"^(not-pretrained-)?(trialCV|subjCV)(-partition\d+)?(-.*)?$"
+    pattern = r"^(not-pretrained-)?(trialCV|subjCV)(-partition\d+)?(-.*)?|^train-only(-.*)?$"
     models = [s for s in models if re.match(pattern, s)]
 
     models.sort()
@@ -27,6 +26,9 @@ def plot_results(results_folder_path):
     for group_name, mg in model_groups.items():
         for fn in ['time_dependent_training_metrics',
                    'time_dependent_test_metrics']:  # later add 'scz', 'hc'
+            if group_name.startswith('train-only') and 'training' in fn:
+                continue
+
             dfs = [pd.read_csv(os.path.join(results_folder_path, m, f'{fn}.csv')) for m in mg]
 
             combined_df = pd.concat(dfs)  # Merge all data into one DataFrame
@@ -53,29 +55,19 @@ def plot_results(results_folder_path):
             plt.title(run)
 
             plt.savefig(os.path.join('../results', 'plots', f'{run}_{fn[15:]}.png'))
-
-            # TODO: joint plot
-            # add columns indicating 'group' and 'training/test' in combined_df, append it to all_data
-            # plot again, with hue (or whatever) set to 'group', one for training, one for test
+            plt.close()
 
 
 def plot_umap(results_folder_path):
-    filenames = os.listdir(results_folder_path)
-    umap_files = [f for f in filenames if 'umap' in f]
+    directories = os.listdir(results_folder_path)
 
-    file_groups = defaultdict(list)
-    # Group by the common prefix (everything before the first underscore after 'umap_subjects-X-Y')
-    for uf in umap_files:
-        prefix = "_".join(uf.split("_")[:3])  # Extracts 'umap_subjects-X-Y'
-        file_groups[prefix].append(uf)
+    for dir in directories:
+        plot_dir = os.path.join('../results', 'plots', dir)
+        if not os.path.isdir(plot_dir):
+            os.mkdir(plot_dir)
 
-    for group_name, fg in file_groups:
-        group_dir = os.path.join('../results', 'plots', group_name)
-        if not os.path.isdir(group_dir):
-            os.mkdir(group_dir)
-
-        for uf in fg:
-            df = pd.read_csv(os.path.join(results_folder_path, uf))
+        for file in os.listdir(dir):
+            df = pd.read_csv(os.path.join(results_folder_path, file))
 
             # Create a seaborn lineplot, passing the matrix directly to seaborn
             plt.figure(figsize=(10, 6))  # Optional: Set the figure size
@@ -87,7 +79,8 @@ def plot_umap(results_folder_path):
             # Set plot labels and title
             plt.legend()
 
-            plt.savefig(os.path.join(group_dir, f'{uf[:-4]}_combined.png'))
+            plt.savefig(os.path.join(plot_dir, f'{file[:-4]}.png'))
+            plt.close()
 
 
 if __name__ == '__main__':
@@ -96,4 +89,4 @@ if __name__ == '__main__':
     if not os.path.isdir(plots_folder):
         os.mkdir(plots_folder)
     plot_results(results_folder_path=results_folder)
-    plot_umap(results_folder_path=os.path.join(results_folder, 'test-0'))
+    plot_umap(results_folder_path=os.path.join(results_folder, 'umap-0', 'umap'))
