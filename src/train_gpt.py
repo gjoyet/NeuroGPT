@@ -349,6 +349,8 @@ def train(config: Dict = None) -> Trainer:
             os.mkdir(os.path.join(config["log_dir"], 'umap'))
 
         trainer.model.eval()
+        trainer.model.switch_decoding_mode(is_decoding_mode=False)
+
         idxs = np.array(train_dataset.indices)
         idxs = idxs[idxs % config["num_chunks"] == config["num_chunks"] - 1]  # select last chunk for every trial
 
@@ -369,11 +371,12 @@ def train(config: Dict = None) -> Trainer:
                 subset = Subset(dataset, subj_idxs_select)
                 dataloader = torch.utils.data.DataLoader(dataset=subset, batch_size=len(subset), shuffle=False)
 
-                outputs = trainer.model(next(iter(dataloader)))
-                enc = outputs['outputs']
-                encodings.append(enc)
+                outputs = trainer.model.encoder((next(iter(dataloader))))
+                # TODO: fix this. Outputs are actually only logits. Need the encodings.
+                print(f'Outputs shape: {outputs.size()}')
+                encodings.append(outputs)
 
-            for nn, md in itertools.product([3, 5, 10, 15, 20], [0.1, 0.25, 1, 1.5]):
+            for nn, md in itertools.product([3, 5, 10, 15, 20], [0.1, 0.25, 0.5]):
 
                 reducer = umap.UMAP(n_neighbors=nn, min_dist=md)
                 reducer.fit(torch.cat(encodings).detach().numpy())
