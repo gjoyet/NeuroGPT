@@ -348,6 +348,9 @@ def train(config: Dict = None) -> Trainer:
 
     # UMAP
     with torch.no_grad():
+        if not os.path.isdir(os.path.join(config["log_dir"], 'umap')):
+            os.mkdir(os.path.join(config["log_dir"], 'umap'))
+
         trainer.model.eval()
         idxs = np.array(train_dataset.indices)
         idxs = idxs[idxs % config["num_chunks"] == config["num_chunks"] - 1]  # select last chunk for every trial
@@ -389,6 +392,7 @@ def train(config: Dict = None) -> Trainer:
                 combined_df.to_csv(
                     os.path.join(
                         config["log_dir"],
+                        'umap',
                         'umap_subjects-{}-{}_{}nn_{}md.csv'.format(*subject_pair, nn, md)
                     ),
                     index=False
