@@ -349,7 +349,6 @@ def train(config: Dict = None) -> Trainer:
             os.mkdir(os.path.join(config["log_dir"], 'umap'))
 
         trainer.model.eval()
-        print(f'fc length: {trainer.model.encoder.get_fc_size()}')  # remove later
         trainer.model.encoder.is_decoding_mode = False
 
         idxs = np.array(train_dataset.indices)
@@ -373,26 +372,14 @@ def train(config: Dict = None) -> Trainer:
                 dataloader = torch.utils.data.DataLoader(dataset=subset, batch_size=len(subset), shuffle=False)
 
                 batch = next(iter(dataloader))
-
-                sizzles = batch["inputs"].size()  # remove later
-                print(f'Batch: \n{batch.keys()}\n{sizzles}')  # remove later
-
                 outputs = trainer.model.encoder(batch["inputs"])
-                # TODO: fix this. Outputs are actually only logits. Need the encodings.  # remove later
-                print(f'Outputs shape: {outputs.size()}')  # remove later
-                test = outputs.contiguous().view(outputs.size(0), -1)
-                print(f'Test outputs: {test.size()}')
+
                 encodings.append(outputs.contiguous().view(outputs.size(0), -1))
 
             for nn, md in itertools.product([3, 5, 10, 15, 20], [0.1, 0.25, 0.5]):
-
                 reducer = umap.UMAP(n_neighbors=nn, min_dist=md)
-                test = torch.cat(encodings)
-                print(f'Test cat: {test.size()}')
                 reducer.fit(torch.cat(encodings).detach().numpy())
                 embeddings = [reducer.transform(enc.detach().numpy()) for enc in encodings]
-                print(len(embeddings), len(embeddings[0]), len(embeddings[1]), len(embeddings[0][0]))
-                print(f'Embeddings size: {embeddings[0].size()}')
 
                 dfs = []
                 for i, sid in enumerate(subject_pair):
