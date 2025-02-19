@@ -20,7 +20,9 @@ def plot_results(results_folder_path):
     model_groups = defaultdict(list)
     for m in models:
         # Replace any single digit with a placeholder (e.g., '#')
-        template = re.sub(r'(?<=partition)\d', '#', m)  # Replace only the first digit occurrence
+        # Remove "not-pretrained-" if it exists
+        normalized = re.sub(r"^not-pretrained-", "", m)
+        template = re.sub(r'(?<=partition)\d', '#', normalized)  # Replace only the first digit occurrence
         model_groups[template].append(m)
 
     for group_name, mg in model_groups.items():
@@ -29,7 +31,11 @@ def plot_results(results_folder_path):
             if group_name.startswith('train-only') and 'training' in fn:
                 continue
 
-            dfs = [pd.read_csv(os.path.join(results_folder_path, m, f'{fn}.csv')) for m in mg]
+            dfs = []
+            for m in mg:
+                df = pd.read_csv(os.path.join(results_folder_path, m, f'{fn}.csv'))
+                df['Pretrained'] = 'Not Pretrained' if 'not-pretrained' in m else 'Pretrained'
+                dfs.append(df)
 
             combined_df = pd.concat(dfs)  # Merge all data into one DataFrame
 
@@ -38,7 +44,7 @@ def plot_results(results_folder_path):
 
             # Create the lineplot, seaborn will automatically calculate confidence intervals
             sns.lineplot(data=combined_df, x=combined_df['chunk_position'] - 500, y='accuracy',
-                         errorbar='ci', label='Accuracy')
+                         errorbar='ci', hue='Pretrained')
             sns.despine()
 
             plt.axhline(y=0.5, xmin=0, color='orange', linestyle='dashdot', linewidth=1, label='Random Chance')
@@ -62,6 +68,8 @@ def plot_umap(results_folder_path):
     directories = os.listdir(results_folder_path)
 
     for direc in directories:
+        if direc.startswith('.'):
+            continue
         plot_dir = os.path.join('../results', 'plots', direc)
         if not os.path.isdir(plot_dir):
             os.mkdir(plot_dir)
