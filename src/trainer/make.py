@@ -3,9 +3,9 @@
 import os
 from typing import Dict, List, Tuple
 import numpy as np
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, mean_squared_error, mean_absolute_error, r2_score
 import torch
-from transformers import TrainingArguments,TrainerCallback
+from transformers import TrainingArguments, TrainerCallback
 from trainer.base import Trainer
 
 
@@ -86,11 +86,13 @@ def _cat_data_collator(features: List) -> Dict[str, torch.tensor]:
 
 
 def decoding_accuracy_metrics(eval_preds):
-    preds, labels = eval_preds
-    preds = preds.argmax(axis=-1)
-    accuracy = accuracy_score(labels, preds)
+    preds, labels = eval_preds  # @Guillaume: will maybe need to reshape stuff
+    # preds = preds.argmax(axis=-1)
+    mse = mean_squared_error(labels, preds)
+    mae = mean_absolute_error(labels, preds)
+    r2s = r2_score(labels, preds)
     return {
-        "accuracy": round(accuracy, 3)
+        "MSE": round(mse, 6), "MAE": round(mae, 6), "R2": round(r2s, 6)
     }
 
 

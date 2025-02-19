@@ -95,6 +95,7 @@ class BaseEmbedder(torch.nn.Module):
         self.embed_dim = embed_dim
         self.num_hidden_layers = num_hidden_layers
         self.dropout = dropout
+        self.mse_loss = torch.nn.MSELoss(reduction='mean')
         self.xe_loss = torch.nn.CrossEntropyLoss(reduction='mean')
         self.bxe_loss = torch.nn.BCEWithLogitsLoss(reduction='mean')
         self.l1_loss = torch.nn.L1Loss(reduction='mean')
@@ -169,27 +170,28 @@ class BaseEmbedder(torch.nn.Module):
 
     def decoding_loss(
         self,
-        decoding_logits,
+        predictions,
         labels,
         **kwargs
         ) -> Dict[str, torch.tensor]:
         # pdb.set_trace()
         pass
-        if len(decoding_logits.size()) == 2:
+        print(f'Predictions size: {predictions.size()}')
+        if len(predictions.size()) == 2:
             return {
-                'decoding_loss': self.xe_loss(
-                    input=decoding_logits,
+                'decoding_loss': self.mse_loss(
+                    input=predictions,  # @Guillaume: will maybe need to reshape stuff
                     target=labels.to(dtype=torch.long)
                 )
             }
-        elif len(decoding_logits.size()) == 3:
-            chunks = decoding_logits.size()[1]
-            test1 = decoding_logits.view(-1, 2),
+        elif len(predictions.size()) == 3:
+            chunks = predictions.size()[1]
+            test1 = predictions.view(-1, 2),
             test2 = labels.repeat(chunks).to(dtype=torch.long)
             pass
             return {
-                'decoding_loss': self.xe_loss(
-                    input=decoding_logits.view(-1, 2),
+                'decoding_loss': self.mse_loss(
+                    input=predictions.view(-1, 2),
                     target=labels.repeat(chunks).to(dtype=torch.long)
                 )
             }

@@ -406,7 +406,7 @@ def train(config: Dict = None) -> Trainer:
 
 
 def time_dependent_evaluation(trainer, indices, dataset, output_path, config):
-    metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
+    metrics = {'chunk_position': [], 'mse': [], 'mae': [], 'r2': [], 'n_samples': []}
     for chunk in range(config["num_chunks"]):
         idxs_select = indices[indices % config[
             "num_chunks"] == chunk]  # indices indicate the position of the chunk in the original trial
@@ -414,7 +414,9 @@ def time_dependent_evaluation(trainer, indices, dataset, output_path, config):
 
         metrics['chunk_position'].append(
             config["first_chunk_idx"] + chunk * (config["chunk_len"] - config["chunk_ovlp"]))
-        metrics['accuracy'].append(test_prediction.metrics['test_accuracy'])
+        metrics['mse'].append(test_prediction.metrics['test_mse'])
+        metrics['mae'].append(test_prediction.metrics['test_mae'])
+        metrics['r2'].append(test_prediction.metrics['test_r2'])
         metrics['n_samples'].append(len(idxs_select))
 
     pd.DataFrame.from_dict(
