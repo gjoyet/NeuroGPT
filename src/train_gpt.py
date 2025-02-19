@@ -144,8 +144,6 @@ def train(config: Dict = None) -> Trainer:
     # handles the input part, which are the output from encoder.
     dataset = None
     if config["training_style"] == 'decoding':  # decoding 2AFC
-        # For now, splits train/test set across all subjects.
-        # Could be modified to include subjects only in one of both sets.
         downstream_path = config["dst_data_path"]
         filenames = sorted(os.listdir(downstream_path))
 
