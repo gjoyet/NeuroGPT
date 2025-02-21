@@ -87,7 +87,7 @@ def _cat_data_collator(features: List) -> Dict[str, torch.tensor]:
 
 def decoding_accuracy_metrics(eval_preds):
     preds, labels = eval_preds  # @Guillaume: will maybe need to reshape stuff
-    preds = preds.view(-1)
+    preds = preds.reshape(-1)
     # preds = preds.argmax(axis=-1)
     mse = mean_squared_error(labels, preds)
     mae = mean_absolute_error(labels, preds)
