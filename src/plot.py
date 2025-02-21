@@ -39,8 +39,6 @@ def plot_results(results_folder_path):
             if len(dfs) == 0:
                 continue
 
-            dfs = [pd.read_csv(os.path.join(results_folder_path, m, f'{fn}.csv')) for m in mg]
-
             combined_df = pd.concat(dfs)  # Merge all data into one DataFrame
 
             # Create a seaborn lineplot, passing the matrix directly to seaborn
