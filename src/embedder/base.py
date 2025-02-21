@@ -258,6 +258,8 @@ class BaseEmbedder(torch.nn.Module):
         ) -> Dict[str, torch.tensor]:
 
         if self.is_decoding_mode:
+            print(batch)
+            print(outputs)
             losses = self.decoding_loss(
                 **batch,
                 **outputs
