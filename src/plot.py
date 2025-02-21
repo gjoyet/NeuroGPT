@@ -26,10 +26,14 @@ def plot_results(results_folder_path):
     for group_name, mg in model_groups.items():
         for fn in ['time_dependent_training_metrics',
                    'time_dependent_test_metrics']:  # later add 'scz', 'hc'
-            if group_name.startswith('train-only') and 'training' in fn:
-                continue
 
-            dfs = [pd.read_csv(os.path.join(results_folder_path, m, f'{fn}.csv')) for m in mg]
+            dfs = []
+            for m in mg:
+                csv = os.path.join(results_folder_path, m, f'{fn}.csv')
+                if os.path.isfile(csv):
+                    dfs.append(pd.read_csv(csv))
+            if len(dfs) == 0:
+                continue
 
             combined_df = pd.concat(dfs)  # Merge all data into one DataFrame
 
@@ -49,9 +53,13 @@ def plot_results(results_folder_path):
             plt.ylabel('Accuracy')
             plt.legend()
 
-            run = group_name.split('-')[-3]
-            if group_name.startswith('not-pretrained'):
-                run = 'not-pretrained-' + run
+            if len(mg) > 1:
+                run = group_name.split('-')[-3]
+                if group_name.startswith('not-pretrained'):
+                    run = 'not-pretrained-' + run
+            else:
+                run = group_name[:-2]
+
             plt.title(run)
 
             plt.savefig(os.path.join('../results', 'plots', f'{run}_{fn[15:]}.png'))
@@ -61,7 +69,7 @@ def plot_results(results_folder_path):
 def plot_umap(results_folder_path):
     directories = os.listdir(results_folder_path)
 
-    for direc in directories:
+    for direc in filter(lambda s: not s.startswith('.'), directories):
         plot_dir = os.path.join('../results', 'plots', direc)
         if not os.path.isdir(plot_dir):
             os.mkdir(plot_dir)
