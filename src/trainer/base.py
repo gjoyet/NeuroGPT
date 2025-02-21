@@ -679,6 +679,6 @@ class Trainer(Trainer):
         batch = self._prepare_inputs(batch)
         
         if "labels" in batch:
-            batch["labels"] = batch["labels"].to(torch.long).to(batch["inputs"].device)
+            batch["labels"] = batch["labels"].to(torch.float).to(batch["inputs"].device)
         
         return self._prepare_inputs(batch)

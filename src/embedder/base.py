@@ -181,18 +181,18 @@ class BaseEmbedder(torch.nn.Module):
             return {
                 'decoding_loss': self.mse_loss(
                     input=outputs,  # @Guillaume: will maybe need to reshape stuff
-                    target=labels.to(dtype=torch.long)
+                    target=labels.to(dtype=torch.float)
                 )
             }
         elif len(outputs.size()) == 3:
             chunks = outputs.size()[1]
             test1 = outputs.view(-1, 2),
-            test2 = labels.repeat(chunks).to(dtype=torch.long)
+            test2 = labels.repeat(chunks).to(dtype=torch.float)
             pass
             return {
                 'decoding_loss': self.mse_loss(
                     input=outputs.view(-1, 2),
-                    target=labels.repeat(chunks).to(dtype=torch.long)
+                    target=labels.repeat(chunks).to(dtype=torch.float)
                 )
             }
         else:
