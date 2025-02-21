@@ -180,7 +180,7 @@ class BaseEmbedder(torch.nn.Module):
         if len(outputs.size()) == 2:
             return {
                 'decoding_loss': self.mse_loss(
-                    input=outputs,  # @Guillaume: will maybe need to reshape stuff
+                    input=outputs.view(-1),  # @Guillaume: will maybe need to reshape stuff
                     target=labels.to(dtype=torch.float)
                 )
             }
