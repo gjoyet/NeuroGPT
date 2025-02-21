@@ -171,6 +171,6 @@ class EEGDataset(Dataset):
             }
 
         if labels is not None:
-            out['labels'] = torch.from_numpy(np.array(labels)).to(torch.long)
+            out['labels'] = torch.from_numpy(np.array(labels)).to(torch.float)
    
         return out
