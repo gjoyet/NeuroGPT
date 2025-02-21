@@ -15,7 +15,7 @@ class CSVLogCallback(TrainerCallback):
         super().__init__()
         self.train_log_filepath = None
         self.eval_log_filepath = None
-        
+
     def on_log(
         self,
         args,
@@ -71,7 +71,7 @@ class CSVLogCallback(TrainerCallback):
 def _cat_data_collator(features: List) -> Dict[str, torch.tensor]:
 
     if not isinstance(features[0], dict):
-        features = [vars(f) for f in features] 
+        features = [vars(f) for f in features]
 
     return {
         k: torch.cat(
@@ -92,8 +92,9 @@ def decoding_accuracy_metrics(eval_preds):
     mse = mean_squared_error(labels, preds)
     mae = mean_absolute_error(labels, preds)
     r2s = r2_score(labels, preds)
+    print(f'Prediction mean: {np.mean(preds)}, sd: {np.std(preds)}')
     print(f'Shape labels: {labels.shape}\nShape predictions: {preds.shape}\nFirst 100 elements of both:')
-    print([(l, p) for l, p in zip(labels[:100], preds[:100])])
+    print([(l, p) for l, p in zip(labels[:10], preds[:10])])
     return {
         "mse": round(mse, 6), "mae": round(mae, 6), "r2": round(r2s, 6)
     }

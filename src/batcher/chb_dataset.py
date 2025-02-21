@@ -53,8 +53,10 @@ class CHBDataset_HDF5(EEGDataset):
         all_labels = []
         for f in self.files:
             all_labels.append(f['labels'])
-        print('\n@Guillaume\nOverall label mean: {}\nTotal number of samples (i.e. number of trials): {}'.format(
+        print('\n@Guillaume\nOverall label mean: {}\nOverall label sd: {}\n'
+              'Total number of samples (i.e. number of trials): {}'.format(
             np.mean(np.concatenate(all_labels, axis=0)),
+            np.std(np.concatenate(all_labels, axis=0)),
             sum(self.num_trials_per_sub)))
 
         # Choices
