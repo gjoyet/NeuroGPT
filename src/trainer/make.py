@@ -92,6 +92,8 @@ def decoding_accuracy_metrics(eval_preds):
     mse = mean_squared_error(labels, preds)
     mae = mean_absolute_error(labels, preds)
     r2s = r2_score(labels, preds)
+    print(f'Shape labels: {labels.shape}\nShape predictions: {preds.shape}\nFirst 100 elements of both:')
+    print([(l, p) for l, p in zip(labels[:100], preds[:100])])
     return {
         "mse": round(mse, 6), "mae": round(mae, 6), "r2": round(r2s, 6)
     }
