@@ -176,7 +176,6 @@ class BaseEmbedder(torch.nn.Module):
         ) -> Dict[str, torch.tensor]:
         # pdb.set_trace()
         pass
-        print(f'Predictions size: {outputs.size()}')
         if len(outputs.size()) == 2:
             return {
                 'decoding_loss': self.mse_loss(
