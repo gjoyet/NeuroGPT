@@ -170,28 +170,28 @@ class BaseEmbedder(torch.nn.Module):
 
     def decoding_loss(
         self,
-        predictions,
+        outputs,
         labels,
         **kwargs
         ) -> Dict[str, torch.tensor]:
         # pdb.set_trace()
         pass
-        print(f'Predictions size: {predictions.size()}')
-        if len(predictions.size()) == 2:
+        print(f'Predictions size: {outputs.size()}')
+        if len(outputs.size()) == 2:
             return {
                 'decoding_loss': self.mse_loss(
-                    input=predictions,  # @Guillaume: will maybe need to reshape stuff
+                    input=outputs,  # @Guillaume: will maybe need to reshape stuff
                     target=labels.to(dtype=torch.long)
                 )
             }
-        elif len(predictions.size()) == 3:
-            chunks = predictions.size()[1]
-            test1 = predictions.view(-1, 2),
+        elif len(outputs.size()) == 3:
+            chunks = outputs.size()[1]
+            test1 = outputs.view(-1, 2),
             test2 = labels.repeat(chunks).to(dtype=torch.long)
             pass
             return {
                 'decoding_loss': self.mse_loss(
-                    input=predictions.view(-1, 2),
+                    input=outputs.view(-1, 2),
                     target=labels.repeat(chunks).to(dtype=torch.long)
                 )
             }
