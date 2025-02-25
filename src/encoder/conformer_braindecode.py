@@ -393,10 +393,10 @@ class _FullyConnected(nn.Module):
             nn.Linear(256, 256),
             nn.ELU(),
             nn.Dropout(drop_prob_1),
-            nn.Linear(256, 128),
+            nn.Linear(256, 64),
             nn.ELU(),
             nn.Dropout(drop_prob_1),
-            nn.Linear(128, hidden_channels),
+            nn.Linear(64, hidden_channels),
             nn.ELU(),
             # nn.Dropout(drop_prob_2),
         )
