@@ -257,11 +257,12 @@ def train(config: Dict = None) -> Trainer:
                 'model_final'
             )
         )
-        torch.save(trainer.model.state_dict(),
-                   os.path.join(
-                       config["log_dir"],
-                       'pytorch_model.bin'
-                   ))
+        # Redundant
+        # torch.save(trainer.model.state_dict(),
+        #            os.path.join(
+        #                config["log_dir"],
+        #                'pytorch_model.bin'
+        #            ))
 
     # GENERAL EVALUATION
     if test_dataset is not None and not os.path.isfile(os.path.join(
