@@ -99,4 +99,4 @@ class CHBDataset_HDF5(EEGDataset):
         trial = self.files[file_index]['epochs'][infile_trial_index, :, select:select + self.chunk_len]
         label = self.files[file_index]['labels'][infile_trial_index, chunk_index]
 
-        return self.preprocess_sample(np.array(trial), 1, np.array(label))
+        return self.preprocess_sample(np.array(trial), 1, 10 * np.array(label))
