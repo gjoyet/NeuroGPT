@@ -337,7 +337,7 @@ def train(config: Dict = None) -> Trainer:
                                   config=config)
 
     # TIME-DEPENDENT EVALUATION OF SINGLE SUBJECTS
-    for sid in [21, 24, 40, 42, 106, 116, 206, 208]:
+    for sid in [21, 24, 106, 116]:
         output_path = os.path.join(
             config["log_dir"],
             'time_dependent_test_metrics_only_subj{}.csv'.format(sid)
