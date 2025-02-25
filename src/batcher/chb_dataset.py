@@ -57,6 +57,11 @@ class CHBDataset_HDF5(EEGDataset):
             np.mean(all_labels),
             sum(self.num_trials_per_sub)))
 
+        self.label_map = {}
+        for i, sid in enumerate([21, 24, 106, 116]):
+            idx = [i for i, s in enumerate(self.filenames) if f'subject{sid}_' in s][0]
+            self.label_map[idx] = i
+
         # Choices
         self.labels_string2int = {'left': 0, 'right': 1}
         self.Fs = 1000  # 250Hz from original paper
@@ -97,5 +102,7 @@ class CHBDataset_HDF5(EEGDataset):
         select = self.first_chunk_idx + chunk_index * (self.chunk_len - self.ovlp)
         trial = self.files[file_index]['epochs'][infile_trial_index, :, select:select + self.chunk_len]
         label = self.files[file_index]['labels'][infile_trial_index, ...]
+
+        label = self.label_map[file_index]
 
         return self.preprocess_sample(np.array(trial), 1, np.array(label))

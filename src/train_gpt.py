@@ -180,6 +180,16 @@ def train(config: Dict = None) -> Trainer:
 
         training_indices = np.concatenate([p for i, p in enumerate(partition) if i != partition_id])
         test_indices = partition[partition_id]
+        print(f'Length training_indices: {len(training_indices)}\nLength test_indices: {len(test_indices)}')
+
+        subjects_indices = []
+        for sid in [21, 24, 106, 116]:
+            subjects_indices.extend(dataset.get_indices_of_single_subject(sid))
+        print(f'Length subjects_indices: {len(subjects_indices)}')
+
+        training_indices = np.intersect1d(subjects_indices, training_indices)
+        test_indices = np.intersect1d(subjects_indices, test_indices)
+        print(f'Length training_indices: {len(training_indices)}\nLength test_indices: {len(test_indices)}')
 
         train_dataset = Subset(dataset, training_indices)
         test_dataset = Subset(dataset, test_indices)
