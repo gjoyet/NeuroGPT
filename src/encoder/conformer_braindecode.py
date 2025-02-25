@@ -384,10 +384,19 @@ class _FullyConnected(nn.Module):
 
         super().__init__()
         self.fc = nn.Sequential(
-            nn.Linear(final_fc_length, out_channels),
+            nn.Linear(final_fc_length, 512),
             nn.ELU(),
             nn.Dropout(drop_prob_1),
-            nn.Linear(out_channels, hidden_channels),
+            nn.Linear(512, 256),
+            nn.ELU(),
+            nn.Dropout(drop_prob_1),
+            nn.Linear(256, 256),
+            nn.ELU(),
+            nn.Dropout(drop_prob_1),
+            nn.Linear(256, 128),
+            nn.ELU(),
+            nn.Dropout(drop_prob_1),
+            nn.Linear(128, hidden_channels),
             nn.ELU(),
             # nn.Dropout(drop_prob_2),
         )
