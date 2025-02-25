@@ -99,12 +99,12 @@ def plot_umap(results_folder_path):
             caption = (
                     r"$\mathbf{With\ respect\ to\ subjects:}$" + "\n" +
                     r"$\quad \| m_1 - m_0 \| = $" + rf"{sid_md}" + "\n" +
-                    r"$\quad \| \Sigma_{c0} \| = $" + rf"{sid_det1}" + "\n" +
-                    r"$\quad \| \Sigma_{c1} \| = $" + rf"{sid_det2}" + "\n\n" +
+                    r"$\quad | \Sigma_{0} | = $" + rf"{sid_det1}" + "\n" +
+                    r"$\quad | \Sigma_{1} | = $" + rf"{sid_det2}" + "\n\n" +
                     r"$\mathbf{With\ respect\ to\ labels:}$" + "\n" +
                     r"$\quad \| m_1 - m_0 \| = $" + rf"{lab_md}" + "\n" +
-                    r"$\quad \| \Sigma_{0} \| = $" + rf"{lab_det1}" + "\n" +
-                    r"$\quad \| \Sigma_{1} \| = $" + rf"{lab_det2}"
+                    r"$\quad | \Sigma_{0} | = $" + rf"{lab_det1}" + "\n" +
+                    r"$\quad | \Sigma_{1} | = $" + rf"{lab_det2}"
             )
 
             plt.subplots_adjust(right=0.7)
