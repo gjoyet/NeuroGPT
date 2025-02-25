@@ -4,6 +4,7 @@ from collections import defaultdict
 import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 import pandas as pd
 
 matplotlib.use('macOSX')
@@ -81,20 +82,60 @@ def plot_umap(results_folder_path):
         for file in os.listdir(os.path.join(results_folder_path, direc)):
             df = pd.read_csv(os.path.join(results_folder_path, direc, file))
 
-            # Create a seaborn lineplot, passing the matrix directly to seaborn
-            plt.figure(figsize=(10, 6))  # Optional: Set the figure size
+            sid_md, sid_det1, sid_det2 = compute_stats(df, 'Subject ID')
+            lab_md, lab_det1, lab_det2 = compute_stats(df, 'Label')
 
+            # Create a seaborn lineplot, passing the matrix directly to seaborn
+            fig, ax = plt.subplots(figsize=(12, 8))
             custom_palette = {df["Subject ID"].min(): sns.color_palette()[0],
                               df["Subject ID"].max(): sns.color_palette()[1]}
             sns.scatterplot(data=df, x='x_embed', y='y_embed', hue='Subject ID',
-                            style='Label', alpha=0.75, palette=custom_palette)
+                            style='Label', alpha=0.75, s=60,
+                            palette=custom_palette, ax=ax)
             sns.despine()
 
-            # Set plot labels and title
             plt.legend()
+
+            caption = (
+                    r"$\mathbf{With\ respect\ to\ subjects:}$" + "\n" +
+                    r"$\quad \| m_1 - m_0 \| = $" + rf"{sid_md}" + "\n" +
+                    r"$\quad | \Sigma_{0} | = $" + rf"{sid_det1}" + "\n" +
+                    r"$\quad | \Sigma_{1} | = $" + rf"{sid_det2}" + "\n\n" +
+                    r"$\mathbf{With\ respect\ to\ labels:}$" + "\n" +
+                    r"$\quad \| m_1 - m_0 \| = $" + rf"{lab_md}" + "\n" +
+                    r"$\quad | \Sigma_{0} | = $" + rf"{lab_det1}" + "\n" +
+                    r"$\quad | \Sigma_{1} | = $" + rf"{lab_det2}"
+            )
+
+            plt.subplots_adjust(right=0.7)
+            fig.text(
+                0.95, 0.5, caption, ha='right', va='center', fontsize=12,
+                bbox=dict(facecolor='white', alpha=0.6, edgecolor='gray'),
+                multialignment='left'
+            )
 
             plt.savefig(os.path.join(plot_dir, f'{file[:-4]}.png'))
             plt.close()
+
+
+def compute_stats(df, var):
+    v1 = df[var].min()
+    v2 = df[var].max()
+
+    # Mean Diff
+    var_mean = df.groupby(var)[['x_embed', 'y_embed']].mean()
+    var_mean_diff = np.array(var_mean.loc[v2] - var_mean.loc[v1])
+    var_mean_diff_magnitude = np.linalg.norm(var_mean_diff)
+
+    # Within-Class variance
+    var_cov = df.groupby(var)[['x_embed', 'y_embed']].cov()
+    cov1 = np.array(var_cov.loc[v1])
+    cov2 = np.array(var_cov.loc[v2])
+
+    det1 = np.linalg.det(cov1)
+    det2 = np.linalg.det(cov2)
+
+    return round(var_mean_diff_magnitude, 3), round(det1, 3), round(det2, 3)
 
 
 if __name__ == '__main__':
