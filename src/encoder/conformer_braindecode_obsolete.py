@@ -362,7 +362,7 @@ class _TransformerEncoder(nn.Sequential):
 class _FullyConnected(nn.Module):
     def __init__(self, final_fc_length,
                  drop_prob_1=0.5, drop_prob_2=0.3, out_channels=256,
-                 hidden_channels=32, num_chunks=2):
+                 hidden_channels=128, num_chunks=2):
         """Fully-connected layer for the transformer encoder.
 
         Parameters
@@ -389,10 +389,13 @@ class _FullyConnected(nn.Module):
         self.num_chunks = num_chunks
         self.fc = nn.Sequential(
             # @Guillaume: nn.Linear(final_fc_length*self.num_chunks, out_channels) to decode whole trial at once.
-            nn.Linear(final_fc_length, out_channels),
+            nn.Linear(final_fc_length, 256),
             nn.ELU(),
             nn.Dropout(drop_prob_1),
-            nn.Linear(out_channels, hidden_channels),
+            nn.Linear(256, 256),
+            nn.ELU(),
+            nn.Dropout(drop_prob_1),
+            nn.Linear(256, hidden_channels),
             nn.ELU(),
             # nn.Dropout(drop_prob_2),
         )
@@ -405,7 +408,7 @@ class _FullyConnected(nn.Module):
 
 
 class _FinalLayer(nn.Module):
-    def __init__(self, n_classes, hidden_channels=32, return_features=False, add_log_softmax=True):
+    def __init__(self, n_classes, hidden_channels=128, return_features=False, add_log_softmax=True):
         """Classification head for the transformer encoder.
 
         Parameters
