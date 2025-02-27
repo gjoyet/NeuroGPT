@@ -1,6 +1,7 @@
 # Authors: Yonghao Song <eeyhsong@gmail.com>
 #
 # License: BSD (3-clause)
+import math
 import torch
 import torch.nn.functional as F
 from einops import rearrange
@@ -138,6 +139,10 @@ class EEGConformer(EEGModuleMixin, nn.Module):
             assert self.n_times is not None
             final_fc_length = self.get_fc_size()
 
+        pe_chunk_length, pe_channels = self.get_pe_chunk_dims()
+
+        self.positional_encoding = _PositionalEncoding(d_model=pe_channels, embed_chunk_len=pe_chunk_length)
+
         self.transformer = _TransformerEncoder(
             att_depth=att_depth,
             emb_size=n_filters_time,
@@ -155,13 +160,20 @@ class EEGConformer(EEGModuleMixin, nn.Module):
                                            return_features=return_features,
                                            add_log_softmax=self.add_log_softmax)
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: Tensor, input_position) -> Tensor:
         batch, chunks, chann, time = x.size()
         x = x.contiguous().view(batch*chunks, chann, time)
         # x = x.permute(0, 2, 1, 3).contiguous().view(batch, chann, -1)
 
         x = torch.unsqueeze(x, dim=1)  # add one extra dimension
         x = self.patch_embedding(x)
+
+        if chunks > 1:
+            input_position = torch.repeat_interleave(input_position, chunks)
+        converted_position = (input_position / time * x.size(1)).to(torch.int)
+        for i in range(len(x)):
+            x[i] = self.positional_encoding(x[i], converted_position[i])
+
         x = self.transformer(x)
 
         if self.is_decoding_mode:
@@ -179,6 +191,15 @@ class EEGConformer(EEGModuleMixin, nn.Module):
         size_embedding_2 = out.cpu().data.numpy().shape[2]
 
         return size_embedding_1 * size_embedding_2
+
+    def get_pe_chunk_dims(self):
+        out = self.patch_embedding(torch.ones((1, 1,
+                                               self.n_chans,
+                                               self.n_times)))
+        size_embedding_1 = out.cpu().data.numpy().shape[1]
+        size_embedding_2 = out.cpu().data.numpy().shape[2]
+
+        return size_embedding_1, size_embedding_2
 
 
 class _PatchEmbedding(nn.Module):
@@ -239,7 +260,7 @@ class _PatchEmbedding(nn.Module):
             nn.Conv2d(
                 n_filters_time, n_filters_time, (1, 1), stride=(1, 1)
             ),  # transpose, conv could enhance fiting ability slightly
-            Rearrange("b d_model 1 seq -> b seq d_model"), # no need, because it will be flattened
+            Rearrange("b d_model 1 seq -> b seq d_model"),  # no need, because it will be flattened
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -433,3 +454,26 @@ class _FinalLayer(nn.Module):
         else:
             out = self.final_layer(x)
             return out
+
+
+# Usually, positional encoding is used to indicate a tokens position in the sample (in our case, the sample
+# is a single chunk). However, we want it to indicate the position of the token in the complete original sequence.
+class _PositionalEncoding(nn.Module):
+    def __init__(self, d_model, embed_chunk_len, dropout=0.0, scale=0.1, max_chunks=10):
+        super(_PositionalEncoding, self).__init__()
+        self.dropout = nn.Dropout(p=dropout)
+
+        self.embed_chunk_len = embed_chunk_len
+        max_len = self.embed_chunk_len * max_chunks  # sets max length of sequence to max_chunks non-overlapping chunks
+
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        self.register_buffer('pe', pe)
+        self.alpha = nn.Parameter(torch.tensor(scale))  # learnable scale parameter
+
+    def forward(self, x, pos):
+        x = x + self.alpha * self.pe[pos:pos+self.embed_chunk_len, :]
+        return self.dropout(x)

@@ -153,7 +153,8 @@ def train(config: Dict = None) -> Trainer:
         if downstream_path.endswith('npz/'):
             dataset = CHBDataset_NPZ(filenames=filenames, sample_keys=[
                 'inputs',
-                'attention_mask'
+                'attention_mask',
+                'input_position'
             ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"],
                                      root_path=downstream_path, gpt_only=not config["use_encoder"],
                                      first_chunk_idx=config["first_chunk_idx"])

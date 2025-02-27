@@ -135,7 +135,8 @@ class EEGDataset(Dataset):
         self,
         sample,
         seq_len,
-        labels=None
+        labels=None,
+        input_position=-1
         ) -> Dict[str, torch.Tensor]:
         out = {}
         if self.do_normalization:
@@ -162,6 +163,7 @@ class EEGDataset(Dataset):
         out["attention_mask"] = torch.from_numpy(attention_mask).to(torch.long)
         out['seq_on'] = seq_on
         out['seq_len'] = seq_len
+        out['input_position'] = input_position  # position of the chunk in the original sequence
         
         if self.sample_keys is not None:
             out = {
