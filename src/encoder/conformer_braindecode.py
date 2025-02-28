@@ -459,7 +459,7 @@ class _FinalLayer(nn.Module):
 # Usually, positional encoding is used to indicate a tokens position in the sample (in our case, the sample
 # is a single chunk). However, we want it to indicate the position of the token in the complete original sequence.
 class _PositionalEncoding(nn.Module):
-    def __init__(self, d_model, embed_chunk_len, dropout=0.0, scale=0.1, max_chunks=10):
+    def __init__(self, d_model, embed_chunk_len, dropout=0.0, scale=0.05, max_chunks=10):
         super(_PositionalEncoding, self).__init__()
         self.dropout = nn.Dropout(p=dropout)
 
