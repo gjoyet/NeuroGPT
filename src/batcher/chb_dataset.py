@@ -63,6 +63,8 @@ class CHBDataset_HDF5(EEGDataset):
 
         self.first_chunk_idx = first_chunk_idx
 
+        self.subject_classes = self.get_classes()
+
     def get_indices_by_subject_type(self):
         pattern = r"subject(\d+)_"
         scz_indices = []
@@ -84,6 +86,19 @@ class CHBDataset_HDF5(EEGDataset):
     def get_indices_of_single_subject(self, subject_id):
         pass
 
+    def get_classes(self):
+        pattern = r"subject(\d+)_"
+        subject_classes = []
+        for i, fn in enumerate(self.filenames):
+            match = re.search(pattern, fn)
+            if match:
+                sid = int(match.group(1))
+                if sid < 100:
+                    subject_classes.append(0)
+                else:
+                    subject_classes.append(1)
+        return subject_classes
+
     def __len__(self):
         return sum(self.num_trials_per_sub) * self.num_chunks
 
@@ -98,4 +113,4 @@ class CHBDataset_HDF5(EEGDataset):
         trial = self.files[file_index]['epochs'][infile_trial_index, :, select:select + self.chunk_len]
         label = self.files[file_index]['labels'][infile_trial_index, ...]
 
-        return self.preprocess_sample(np.array(trial), 1, np.array(label))
+        return self.preprocess_sample(np.array(trial), 1, np.array(self.subject_classes[file_index]))
