@@ -265,11 +265,11 @@ def train(config: Dict = None) -> Trainer:
         #            ))
 
     # GENERAL EVALUATION
-    if test_dataset is not None and not os.path.isfile(os.path.join(
+    if validation_dataset is not None and not os.path.isfile(os.path.join(
             config["log_dir"],
             'test_metrics.csv'
     )):
-        test_prediction = trainer.predict(test_dataset)
+        test_prediction = trainer.predict(validation_dataset)
         pd.DataFrame(
             test_prediction.metrics,
             index=[0]
