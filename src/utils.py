@@ -127,7 +127,7 @@ def convert_safetensors(results_folder):
     for m in models:
         if '.DS_Store' in m:
             continue
-        safetensors_path = os.path.join(results_folder, m, "model_final", "model.safetensors")
+        safetensors_path = os.path.join(results_folder, m, "model_final", "model_005alpha.safetensors")
         state_dict = load_file(safetensors_path)
 
         # Save the model in pytorch_model.bin format

@@ -170,16 +170,18 @@ class BaseEmbedder(torch.nn.Module):
     def decoding_loss(
         self,
         decoding_logits,
-        labels,
+        labels,                 # labels now contain response AND subject
+        subject_encodings,
         **kwargs
         ) -> Dict[str, torch.tensor]:
         # pdb.set_trace()
-        pass
+        sigma = 0.5
         if len(decoding_logits.size()) == 2:
             return {
                 'decoding_loss': self.xe_loss(
                     input=decoding_logits,
-                    target=labels.to(dtype=torch.long)
+                    target=labels.to(dtype=torch.long) +
+                    sigma * self.infonce_loss()
                 )
             }
         elif len(decoding_logits.size()) == 3:
@@ -248,6 +250,9 @@ class BaseEmbedder(torch.nn.Module):
             input=torch.masked_select(outputs, attention_mask.to(torch.bool)),
             target=torch.masked_select(inputs, attention_mask.to(torch.bool))
         )
+
+    def infonce_loss(self, anchor, positive_example, negative_examples):
+        pass
 
     def loss(
         self,

@@ -147,15 +147,17 @@ class EEGConformer(EEGModuleMixin, nn.Module):
         self.ch_pos = ch_pos
         self.is_decoding_mode = is_decoding_mode
         if self.is_decoding_mode:
+            self.cutoff = final_fc_length // 2
+
             print("FC Layer for Classification created.")
             self.fc = _FullyConnected(
-                final_fc_length=final_fc_length)
+                final_fc_length=self.cutoff)
 
             self.final_layer = _FinalLayer(n_classes=self.n_outputs,
                                            return_features=return_features,
                                            add_log_softmax=self.add_log_softmax)
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
         batch, chunks, chann, time = x.size()
         x = x.contiguous().view(batch*chunks, chann, time)
         # x = x.permute(0, 2, 1, 3).contiguous().view(batch, chann, -1)
@@ -164,11 +166,15 @@ class EEGConformer(EEGModuleMixin, nn.Module):
         x = self.patch_embedding(x)
         x = self.transformer(x)
 
+        h = None
         if self.is_decoding_mode:
+            x = x.contiguous().view(x.size(0), -1)
+            h = x[:, self.cutoff:]
+            x = x[:, :self.cutoff]
             # pdb.set_trace()
             x = self.fc(x)
             x = self.final_layer(x)
-        return x
+        return x, h
 
     def get_fc_size(self):
 
@@ -393,7 +399,6 @@ class _FullyConnected(nn.Module):
         )
 
     def forward(self, x):
-        x = x.contiguous().view(x.size(0), -1)
         out = self.fc(x)
         return out
 
