@@ -1,26 +1,29 @@
-#/usr/bin/env python3
+# /usr/bin/env python3
 
 import pdb
 import torch
 from typing import Dict
 from einops import rearrange
+import random
+from collections import deque
+
 
 class EmbeddingModel(torch.nn.Module):
 
     def __init__(
-        self,
-        in_dim: int = 1024,
-        embed_dim: int = 768,
-        num_hidden_layers: int = 1,
-        dropout: int = 0.1,
-        ) -> None:
+            self,
+            in_dim: int = 1024,
+            embed_dim: int = 768,
+            num_hidden_layers: int = 1,
+            dropout: int = 0.1,
+    ) -> None:
         super().__init__()
         self.in_dim = in_dim
         self.embed_dim = embed_dim
         self.num_hidden_layers = num_hidden_layers
         self.dropout = dropout
         layer_stack = []
-        for _ in range(self.num_hidden_layers-1):
+        for _ in range(self.num_hidden_layers - 1):
             layer_stack.extend(
                 [
                     torch.nn.Linear(
@@ -35,7 +38,7 @@ class EmbeddingModel(torch.nn.Module):
         layer_stack.extend(
             [
                 torch.nn.Linear(
-                    in_features=self.embed_dim if self.num_hidden_layers>1 else self.in_dim,
+                    in_features=self.embed_dim if self.num_hidden_layers > 1 else self.in_dim,
                     out_features=self.embed_dim
                 ),
                 torch.nn.LayerNorm(self.embed_dim),
@@ -45,21 +48,19 @@ class EmbeddingModel(torch.nn.Module):
         self.model = torch.nn.Sequential(*layer_stack)
 
     def _stack_inputs(
-        self,
-        tensor
-        ) -> torch.tensor:
-        
+            self,
+            tensor
+    ) -> torch.tensor:
         return rearrange(
             tensor=tensor,
             pattern='b s e -> (b s) e'
         )
 
     def _unstack_inputs(
-        self,
-        tensor,
-        b
-        ) -> torch.tensor:
-        
+            self,
+            tensor,
+            b
+    ) -> torch.tensor:
         return rearrange(
             tensor=tensor,
             pattern='(b s) e -> b s e',
@@ -67,12 +68,12 @@ class EmbeddingModel(torch.nn.Module):
         )
 
     def forward(
-        self,
-        inputs,
-        **kwargs
-        ) -> torch.tensor:
+            self,
+            inputs,
+            **kwargs
+    ) -> torch.tensor:
         inputs_stacked = self._stack_inputs(tensor=inputs)
-        
+
         return self._unstack_inputs(
             tensor=self.model(inputs_stacked),
             b=inputs.size()[0]
@@ -81,12 +82,12 @@ class EmbeddingModel(torch.nn.Module):
 
 class BaseEmbedder(torch.nn.Module):
     def __init__(self,
-        in_dim: int = 1024,
-        embed_dim: int = 768,
-        num_hidden_layers: int = 1,
-        dropout: float = 0.1,
-        **kwargs
-        ) -> None:
+                 in_dim: int = 1024,
+                 embed_dim: int = 768,
+                 num_hidden_layers: int = 1,
+                 dropout: float = 0.1,
+                 **kwargs
+                 ) -> None:
         super().__init__()
         self.name = 'BaseEmbedder'
         self.training_style = 'base'
@@ -98,9 +99,9 @@ class BaseEmbedder(torch.nn.Module):
         self.xe_loss = torch.nn.CrossEntropyLoss(reduction='mean')
         self.bxe_loss = torch.nn.BCEWithLogitsLoss(reduction='mean')
         self.l1_loss = torch.nn.L1Loss(reduction='mean')
-        self.l2_loss = torch.nn.MSELoss(reduction='mean') # for L2 loss
+        self.l2_loss = torch.nn.MSELoss(reduction='mean')  # for L2 loss
         # self.huber_loss = torch.nn.HuberLoss(reduction='mean', delta=1.0) # for Huber loss
-        
+
         self.embed_model = EmbeddingModel(
             in_dim=self.in_dim,
             embed_dim=self.embed_dim,
@@ -108,21 +109,22 @@ class BaseEmbedder(torch.nn.Module):
             dropout=self.dropout
         )
         self.is_decoding_mode = False
+        self.memory = SubjectMemoryBank()
 
-    def switch_decoding_mode(self, is_decoding_mode: bool=False) -> None:
+    def switch_decoding_mode(self, is_decoding_mode: bool = False) -> None:
         self.is_decoding_mode = is_decoding_mode
-        
+
         if self.is_decoding_mode:
             self.training_style = 'decoding'
         else:
             self.training_style = self._root_training_style
-    
+
     @staticmethod
     def _pad_tensor_left_by_n(
-        tensor,
-        n,
-        pad_value
-        ) -> torch.tensor:
+            tensor,
+            n,
+            pad_value
+    ) -> torch.tensor:
         filling = torch.ones(
             (
                 tensor.size()[0],
@@ -131,7 +133,7 @@ class BaseEmbedder(torch.nn.Module):
             ),
             device=tensor.device
         ) * pad_value
-        
+
         return torch.cat(
             [
                 filling,
@@ -142,47 +144,52 @@ class BaseEmbedder(torch.nn.Module):
 
     @staticmethod
     def _round_to_precision(
-        x: torch.tensor,
-        precision: float,
-        ) -> torch.tensor:
+            x: torch.tensor,
+            precision: float,
+    ) -> torch.tensor:
         return torch.round(x / precision) * precision
 
-
     def embed_inputs(
-        self,
-        inputs: torch.tensor
-        ) -> torch.tensor:
+            self,
+            inputs: torch.tensor
+    ) -> torch.tensor:
         return self.embed_model(inputs)
-    
+
     def forward(
-        self,
-        batch: Dict[str, torch.tensor]
-        ) -> torch.tensor:
+            self,
+            batch: Dict[str, torch.tensor]
+    ) -> torch.tensor:
         inputs_key = 'inputs' if 'inputs_embeds' not in batch else 'inputs_embeds'
-        
+
         if self.in_dim == self.embed_dim:
             inputs_embeds = batch[inputs_key]
         else:
             inputs_embeds = self.embed_inputs(inputs=batch[inputs_key])
-        
+
         return inputs_embeds
 
     def decoding_loss(
-        self,
-        decoding_logits,
-        labels,                 # labels now contain response AND subject
-        subject_encodings,
-        **kwargs
-        ) -> Dict[str, torch.tensor]:
+            self,
+            decoding_logits,
+            labels,  # labels now contain response AND subject
+            subject_encodings,
+            subject_ids,
+            **kwargs
+    ) -> Dict[str, torch.tensor]:
         # pdb.set_trace()
         sigma = 0.5
+        self.memory.add_embeddings(subject_encodings, subject_ids)
+
         if len(decoding_logits.size()) == 2:
             return {
-                'decoding_loss': self.xe_loss(
-                    input=decoding_logits,
-                    target=labels.to(dtype=torch.long) +
-                    sigma * self.infonce_loss()
-                )
+                'decoding_loss':
+                    self.xe_loss(
+                        input=decoding_logits,
+                        target=labels.to(dtype=torch.long)) +
+                    sigma * self.infonce_loss(
+                        subject_encodings=subject_encodings,
+                        subject_ids=subject_ids
+                    )
             }
         elif len(decoding_logits.size()) == 3:
             chunks = decoding_logits.size()[1]
@@ -197,14 +204,14 @@ class BaseEmbedder(torch.nn.Module):
             }
         else:
             raise ValueError('Incorrect output shape.')
-    
+
     def reconstruction_loss(
-        self,
-        input,
-        target,
-        **kwargs
-        ) -> Dict[str, torch.tensor]:
-        
+            self,
+            input,
+            target,
+            **kwargs
+    ) -> Dict[str, torch.tensor]:
+
         return {
             'reconstruction_loss': self.l2_loss(
                 input=input,
@@ -213,59 +220,64 @@ class BaseEmbedder(torch.nn.Module):
         }
 
     def prep_batch(
-        self,
-        batch: Dict[str, torch.tensor]
-        ) -> Dict:
+            self,
+            batch: Dict[str, torch.tensor]
+    ) -> Dict:
         batch_out = {}
-        
+
         for key in batch:
-            
+
             if (
-                torch.is_tensor(batch[key])
-                and key != 'labels'
+                    torch.is_tensor(batch[key])
+                    and key != 'labels'
             ):
                 batch_out[key] = batch[key].to(torch.float)
-            
+
             elif key == 'labels':
                 batch_out[key] = batch['labels'].to(torch.int)
 
             else:
                 batch_out[key] = torch.clone(batch[key])
-        
+
         # dummy copy of inputs to be used in forward pass
         batch_out['inputs_embeds'] = torch.clone(batch_out['inputs'])
-        
+
         return batch_out
 
     def _root_loss(
-        self,
-        inputs,
-        outputs,
-        attention_mask,
-        **kwargs
-        ) -> Dict[str, torch.tensor]:
-        attention_mask = torch.unsqueeze(attention_mask, -1).repeat(1,1,self.in_dim)
-        
-        return  self.reconstruction_loss(
+            self,
+            inputs,
+            outputs,
+            attention_mask,
+            **kwargs
+    ) -> Dict[str, torch.tensor]:
+        attention_mask = torch.unsqueeze(attention_mask, -1).repeat(1, 1, self.in_dim)
+
+        return self.reconstruction_loss(
             input=torch.masked_select(outputs, attention_mask.to(torch.bool)),
             target=torch.masked_select(inputs, attention_mask.to(torch.bool))
         )
 
-    def infonce_loss(self, anchor, positive_example, negative_examples):
-        pass
+    def infonce_loss(self, subject_encodings, subject_ids):
+        loss = 0
+        for enc, sid in zip(subject_encodings, subject_ids):
+            pos_ex = self.memory.sample_positive(subject_ids)
+            neg_ex = self.memory.sample_negatives(subject_ids, 10)
+            loss += torch.dot(pos_ex, enc) / torch.sum(torch.matmul(neg_ex, enc))
+        return loss / len(subject_encodings)
 
     def loss(
-        self,
-        batch,
-        outputs
-        ) -> Dict[str, torch.tensor]:
+            self,
+            batch,
+            outputs
+    ) -> Dict[str, torch.tensor]:
 
         if self.is_decoding_mode:
             losses = self.decoding_loss(
                 **batch,
                 **outputs
             )
-        
+
         else:
             losses = self._root_loss(
                 **batch,
@@ -276,3 +288,70 @@ class BaseEmbedder(torch.nn.Module):
             losses['loss'] = sum(losses.values())
 
         return losses
+
+
+class SubjectMemoryBank:
+    # For now, num_subjects and embedding_dim are hard-coded. Not nice, but did not find a good way to pass the
+    # corresponding arguments down from classes calling this one.
+    def __init__(self, num_subjects, embedding_dim, queue_size=10):
+        """
+        Memory bank storing past embeddings for each subject.
+
+        Args:
+        - num_subjects (int): Total number of subjects.
+        - embedding_dim (int): Dimensionality of embedding vectors.
+        - queue_size (int): Maximum number of embeddings per subject.
+        """
+        self.num_subjects = num_subjects
+        self.embedding_dim = embedding_dim
+        self.queue_size = queue_size
+        self.queues = {i: deque(maxlen=queue_size) for i in range(num_subjects)}
+
+    def add_embeddings(self, embeddings, subject_labels):
+        """
+        Adds new embeddings to the correct subject queues.
+
+        Args:
+        - embeddings (Tensor): Shape (batch_size, embedding_dim), new embeddings.
+        - subject_labels (Tensor): Shape (batch_size,), corresponding subject IDs.
+        """
+        for emb, subject in zip(embeddings, subject_labels):
+            self.queues[subject.item()].append(emb.detach())  # Store detached embeddings to prevent graph retention
+
+    def sample_positive(self, subject):
+        """
+        Samples a positive example from the same subject queue.
+
+        Args:
+        - subject (int): Subject ID.
+
+        Returns:
+        - Tensor: A random positive embedding, or a zero tensor if the queue is empty.
+        """
+        queue = self.queues[subject]
+        if len(queue) == 0:
+            return torch.zeros(self.embedding_dim)  # Return zero tensor if empty
+        return random.choice(queue)  # Random positive sample
+
+    def sample_negatives(self, subject, num_negatives):
+        """
+        Samples negative examples from different subject queues.
+
+        Args:
+        - subject (int): Subject ID to exclude.
+        - num_negatives (int): Number of negative samples to return.
+
+        Returns:
+        - Tensor: Shape (num_negatives, embedding_dim), sampled negatives.
+        """
+        negative_samples = []
+        available_subjects = [s for s in self.queues.keys() if s != subject and len(self.queues[s]) > 0]
+
+        while len(negative_samples) < num_negatives:
+            if not available_subjects:
+                negative_samples.append(torch.zeros(self.embedding_dim))  # Return zeros if no negatives available
+            else:
+                neg_subject = random.choice(available_subjects)
+                negative_samples.append(random.choice(self.queues[neg_subject]))
+
+        return torch.stack(negative_samples)  # Convert list to tensor

@@ -135,7 +135,8 @@ class EEGDataset(Dataset):
         self,
         sample,
         seq_len,
-        labels=None
+        labels=None,
+        subject_ids=None
         ) -> Dict[str, torch.Tensor]:
         out = {}
         if self.do_normalization:
@@ -172,5 +173,7 @@ class EEGDataset(Dataset):
 
         if labels is not None:
             out['labels'] = torch.from_numpy(np.array(labels)).to(torch.long)
+        if subject_ids is not None:
+            out['subject_ids'] = torch.from_numpy(np.array(subject_ids)).to(torch.long)
    
         return out

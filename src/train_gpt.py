@@ -167,6 +167,7 @@ def train(config: Dict = None) -> Trainer:
         else:
             raise ImportError('Issue with loading data.')
 
+        # TODO: @Guillaume: change before pushing.
         # Split lengths (e.g., 80% train, 20% test)
         split = 0.8
         train_size = int(split * len(dataset))
