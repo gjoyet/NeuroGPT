@@ -31,12 +31,14 @@ class CHBDataset_NPZ(EEGDataset):
         self.trials = self.normalize(np.vstack(trials_all))
         self.labels = np.array(labels_all)
         self.num_trials_per_sub = total_num
+        self.cumnum_trials = np.cumsum(self.num_trials_per_sub)
 
     def __len__(self):
         return sum(self.num_trials_per_sub)
 
     def __getitem__(self, idx):
-        return self.preprocess_sample(self.trials[idx], self.num_chunks, self.labels[idx], np.random.randint(5))  # random only for testing
+        return self.preprocess_sample(self.trials[idx], self.num_chunks, self.labels[idx],
+                                      len(self.cumnum_trials[self.cumnum_trials < idx]))
 
 
 # hdf5 Dataset (does not work because hdf5 objects cannot be pickled).

@@ -2,10 +2,13 @@
 
 import pdb
 import torch
+import torch.nn.functional as F
 from typing import Dict
 from einops import rearrange
 import random
 from collections import deque
+
+from info_nce_loss import InfoNCELoss
 
 
 class EmbeddingModel(torch.nn.Module):
@@ -100,6 +103,7 @@ class BaseEmbedder(torch.nn.Module):
         self.bxe_loss = torch.nn.BCEWithLogitsLoss(reduction='mean')
         self.l1_loss = torch.nn.L1Loss(reduction='mean')
         self.l2_loss = torch.nn.MSELoss(reduction='mean')  # for L2 loss
+        self.info_nce_loss = InfoNCELoss(num_subjects=8, embedding_dim=540, queue_size=10)  # TODO: @Guillaume: change to 78 before commit!
         # self.huber_loss = torch.nn.HuberLoss(reduction='mean', delta=1.0) # for Huber loss
 
         self.embed_model = EmbeddingModel(
@@ -109,7 +113,6 @@ class BaseEmbedder(torch.nn.Module):
             dropout=self.dropout
         )
         self.is_decoding_mode = False
-        self.memory = SubjectMemoryBank()
 
     def switch_decoding_mode(self, is_decoding_mode: bool = False) -> None:
         self.is_decoding_mode = is_decoding_mode
@@ -171,14 +174,14 @@ class BaseEmbedder(torch.nn.Module):
     def decoding_loss(
             self,
             decoding_logits,
-            labels,  # labels now contain response AND subject
+            labels,
             subject_encodings,
             subject_ids,
             **kwargs
     ) -> Dict[str, torch.tensor]:
         # pdb.set_trace()
         sigma = 0.5
-        self.memory.add_embeddings(subject_encodings, subject_ids)
+        self.info_nce_loss.memory.add_embeddings(subject_encodings, subject_ids)
 
         if len(decoding_logits.size()) == 2:
             return {
@@ -186,9 +189,9 @@ class BaseEmbedder(torch.nn.Module):
                     self.xe_loss(
                         input=decoding_logits,
                         target=labels.to(dtype=torch.long)) +
-                    sigma * self.infonce_loss(
-                        subject_encodings=subject_encodings,
-                        subject_ids=subject_ids
+                    sigma * self.info_nce_loss(
+                        anchor=subject_encodings,
+                        label=subject_ids
                     )
             }
         elif len(decoding_logits.size()) == 3:
@@ -258,13 +261,7 @@ class BaseEmbedder(torch.nn.Module):
             target=torch.masked_select(inputs, attention_mask.to(torch.bool))
         )
 
-    def infonce_loss(self, subject_encodings, subject_ids):
-        loss = 0
-        for enc, sid in zip(subject_encodings, subject_ids):
-            pos_ex = self.memory.sample_positive(subject_ids)
-            neg_ex = self.memory.sample_negatives(subject_ids, 10)
-            loss += torch.dot(pos_ex, enc) / torch.sum(torch.matmul(neg_ex, enc))
-        return loss / len(subject_encodings)
+
 
     def loss(
             self,
@@ -288,70 +285,3 @@ class BaseEmbedder(torch.nn.Module):
             losses['loss'] = sum(losses.values())
 
         return losses
-
-
-class SubjectMemoryBank:
-    # For now, num_subjects and embedding_dim are hard-coded. Not nice, but did not find a good way to pass the
-    # corresponding arguments down from classes calling this one.
-    def __init__(self, num_subjects, embedding_dim, queue_size=10):
-        """
-        Memory bank storing past embeddings for each subject.
-
-        Args:
-        - num_subjects (int): Total number of subjects.
-        - embedding_dim (int): Dimensionality of embedding vectors.
-        - queue_size (int): Maximum number of embeddings per subject.
-        """
-        self.num_subjects = num_subjects
-        self.embedding_dim = embedding_dim
-        self.queue_size = queue_size
-        self.queues = {i: deque(maxlen=queue_size) for i in range(num_subjects)}
-
-    def add_embeddings(self, embeddings, subject_labels):
-        """
-        Adds new embeddings to the correct subject queues.
-
-        Args:
-        - embeddings (Tensor): Shape (batch_size, embedding_dim), new embeddings.
-        - subject_labels (Tensor): Shape (batch_size,), corresponding subject IDs.
-        """
-        for emb, subject in zip(embeddings, subject_labels):
-            self.queues[subject.item()].append(emb.detach())  # Store detached embeddings to prevent graph retention
-
-    def sample_positive(self, subject):
-        """
-        Samples a positive example from the same subject queue.
-
-        Args:
-        - subject (int): Subject ID.
-
-        Returns:
-        - Tensor: A random positive embedding, or a zero tensor if the queue is empty.
-        """
-        queue = self.queues[subject]
-        if len(queue) == 0:
-            return torch.zeros(self.embedding_dim)  # Return zero tensor if empty
-        return random.choice(queue)  # Random positive sample
-
-    def sample_negatives(self, subject, num_negatives):
-        """
-        Samples negative examples from different subject queues.
-
-        Args:
-        - subject (int): Subject ID to exclude.
-        - num_negatives (int): Number of negative samples to return.
-
-        Returns:
-        - Tensor: Shape (num_negatives, embedding_dim), sampled negatives.
-        """
-        negative_samples = []
-        available_subjects = [s for s in self.queues.keys() if s != subject and len(self.queues[s]) > 0]
-
-        while len(negative_samples) < num_negatives:
-            if not available_subjects:
-                negative_samples.append(torch.zeros(self.embedding_dim))  # Return zeros if no negatives available
-            else:
-                neg_subject = random.choice(available_subjects)
-                negative_samples.append(random.choice(self.queues[neg_subject]))
-
-        return torch.stack(negative_samples)  # Convert list to tensor
