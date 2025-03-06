@@ -103,7 +103,7 @@ class BaseEmbedder(torch.nn.Module):
         self.bxe_loss = torch.nn.BCEWithLogitsLoss(reduction='mean')
         self.l1_loss = torch.nn.L1Loss(reduction='mean')
         self.l2_loss = torch.nn.MSELoss(reduction='mean')  # for L2 loss
-        self.info_nce_loss = InfoNCELoss(num_subjects=8, embedding_dim=540, queue_size=10)  # TODO: @Guillaume: change to 78 before commit!
+        self.info_nce_loss = InfoNCELoss(num_subjects=78, embedding_dim=540, queue_size=10)
         # self.huber_loss = torch.nn.HuberLoss(reduction='mean', delta=1.0) # for Huber loss
 
         self.embed_model = EmbeddingModel(

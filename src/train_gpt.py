@@ -147,8 +147,6 @@ def train(config: Dict = None) -> Trainer:
         downstream_path = config["dst_data_path"]
         filenames = sorted(os.listdir(downstream_path))
 
-        filenames.remove('.DS_Store')  # TODO: @Guillaume remove before commit.
-
         partition_dir = config["training_partition_loc"]
         partition_id = config["training_partition_id"]
 
@@ -169,23 +167,22 @@ def train(config: Dict = None) -> Trainer:
         else:
             raise ImportError('Issue with loading data.')
 
-        # TODO: @Guillaume: change before commit.
-        # Split lengths (e.g., 80% train, 20% test)
-        split = 0.8
-        train_size = int(split * len(dataset))
-        test_size = len(dataset) - train_size
-
-        # Split the dataset
-        train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
-
-        # partition = get_training_partition(savedir=partition_dir, dataset_size=len(dataset),
-        #                                    num_chunks=config["num_chunks"], partition_id=partition_id)
+        # # Split lengths (e.g., 80% train, 20% test)
+        # split = 0.8
+        # train_size = int(split * len(dataset))
+        # test_size = len(dataset) - train_size
         #
-        # training_indices = np.concatenate([p for i, p in enumerate(partition) if i != partition_id])
-        # test_indices = partition[partition_id]
-        #
-        # train_dataset = Subset(dataset, training_indices)
-        # test_dataset = Subset(dataset, test_indices)
+        # # Split the dataset
+        # train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
+
+        partition = get_training_partition(savedir=partition_dir, dataset_size=len(dataset),
+                                           num_chunks=config["num_chunks"], partition_id=partition_id)
+
+        training_indices = np.concatenate([p for i, p in enumerate(partition) if i != partition_id])
+        test_indices = partition[partition_id]
+
+        train_dataset = Subset(dataset, training_indices)
+        test_dataset = Subset(dataset, test_indices)
 
         validation_dataset = test_dataset
         test_dataset = train_dataset
