@@ -36,7 +36,7 @@ class CHBDataset_NPZ(EEGDataset):
         return sum(self.num_trials_per_sub)
 
     def __getitem__(self, idx):
-        return self.preprocess_sample(self.trials[idx], self.num_chunks, self.labels[idx])
+        return self.preprocess_sample(self.trials[idx], self.num_chunks, self.labels[idx], np.random.randint(8))
 
 
 # hdf5 Dataset (does not work because hdf5 objects cannot be pickled).
@@ -98,4 +98,4 @@ class CHBDataset_HDF5(EEGDataset):
         trial = self.files[file_index]['epochs'][infile_trial_index, :, select:select + self.chunk_len]
         label = self.files[file_index]['labels'][infile_trial_index, ...]
 
-        return self.preprocess_sample(np.array(trial), 1, np.array(label))
+        return self.preprocess_sample(np.array(trial), 1, np.array(label), np.array(file_index))

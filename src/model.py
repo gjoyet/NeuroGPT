@@ -214,7 +214,7 @@ class Model(torch.nn.Module):
         
         if self.encoder is not None:
             #before prep_batch masking and things, we need to first let the splitted chunks of raw input through the encoder
-            features = self.encoder(batch['inputs'])
+            features = self.encoder(batch['inputs'], batch['subjects'])
             #attempt for trying fine-tune only the encoder, but the encoder cannot combine information across chunks.
             if self.is_decoding_mode and self.ft_only_encoder:
                 outputs={'outputs': features, 'decoding_logits': features}
