@@ -168,14 +168,12 @@ class EEGConformer(EEGModuleMixin, nn.Module):
         x = self.patch_embedding(x)
         x = self.transformer(x)
 
-        tmp = torch.zeros(batch, self.fc_list[0].out_features)
-        out = torch.zeros(batch, self.n_outputs)
         if self.is_decoding_mode:
             # pdb.set_trace()
             for i in range(batch):
-                tmp[i] = self.fc_list[subjects[i]](x[i].unsqueeze(0))
-                out[i] = self.final_layer_list[subjects[i]](tmp[i].unsqueeze(0))
-        return out
+                x = torch.cat([self.fc_list[subjects[i]](x[i].unsqueeze(0)) for i in range(batch)], dim=0)
+                x = torch.cat([self.final_layer_list[subjects[i]](x[i].unsqueeze(0)) for i in range(batch)], dim=0)
+        return x
 
     def get_fc_size(self):
 
@@ -398,7 +396,6 @@ class _FullyConnected(nn.Module):
             nn.ELU(),
             # nn.Dropout(drop_prob_2),
         )
-        self.out_features = hidden_channels
 
     def forward(self, x):
         x = x.contiguous().view(x.size(0), -1)
