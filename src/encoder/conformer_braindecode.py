@@ -174,8 +174,10 @@ class EEGConformer(EEGModuleMixin, nn.Module):
                 print(x.shape)
                 print(x[i].unsqueeze(0).shape)
                 print(self.fc_list[subjects[0]](x[0].unsqueeze(0)).shape)
-                x = torch.cat([self.fc_list[subjects[i]](x[i].unsqueeze(0)) for i in range(batch)], dim=0)
-                x = torch.cat([self.final_layer_list[subjects[i]](x[i].unsqueeze(0)) for i in range(batch)], dim=0)
+                print('whut')
+                tmp = torch.cat([self.fc_list[subjects[i]](x[i].unsqueeze(0)) for i in range(batch)], dim=0)
+                out = torch.cat([self.final_layer_list[subjects[i]](tmp[i].unsqueeze(0)) for i in range(batch)], dim=0)
+                x = out
         return x
 
     def get_fc_size(self):
