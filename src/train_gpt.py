@@ -181,6 +181,10 @@ def train(config: Dict = None) -> Trainer:
         training_indices = np.concatenate([p for i, p in enumerate(partition) if i != partition_id])
         test_indices = partition[partition_id]
 
+        # keep more of the samples that are closer to response
+        training_indices = training_indices[np.isin(training_indices % config["num_chunks"] - config["num_chunks"],
+                                                    [-1, -2, -3, -5, -9, -config["num_chunks"]+1])]
+
         train_dataset = Subset(dataset, training_indices)
         test_dataset = Subset(dataset, test_indices)
 

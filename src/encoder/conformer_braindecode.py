@@ -1,6 +1,8 @@
 # Authors: Yonghao Song <eeyhsong@gmail.com>
 #
 # License: BSD (3-clause)
+from typing import List
+
 import torch
 import torch.nn.functional as F
 from einops import rearrange
@@ -9,6 +11,7 @@ from torch import nn, Tensor
 import warnings
 
 from encoder.base import EEGModuleMixin, deprecated_args
+
 
 class EEGConformer(EEGModuleMixin, nn.Module):
     """EEG Conformer.
@@ -143,32 +146,36 @@ class EEGConformer(EEGModuleMixin, nn.Module):
             emb_size=n_filters_time,
             att_heads=att_heads,
             att_drop=att_drop_prob)
-            
+
         self.ch_pos = ch_pos
         self.is_decoding_mode = is_decoding_mode
         if self.is_decoding_mode:
             print("FC Layer for Classification created.")
-            self.fc = _FullyConnected(
-                final_fc_length=final_fc_length)
+            self.fc_list = nn.ModuleList([_FullyConnected(
+                final_fc_length=final_fc_length) for _ in range(78)])
 
-            self.final_layer = _FinalLayer(n_classes=self.n_outputs,
-                                           return_features=return_features,
-                                           add_log_softmax=self.add_log_softmax)
+            self.final_layer_list = nn.ModuleList([_FinalLayer(n_classes=self.n_outputs,
+                                                               return_features=return_features,
+                                                               add_log_softmax=self.add_log_softmax)
+                                                   for _ in range(78)])
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: Tensor, subjects: List[int]) -> Tensor:
         batch, chunks, chann, time = x.size()
-        x = x.contiguous().view(batch*chunks, chann, time)
+        x = x.contiguous().view(batch * chunks, chann, time)
         # x = x.permute(0, 2, 1, 3).contiguous().view(batch, chann, -1)
 
         x = torch.unsqueeze(x, dim=1)  # add one extra dimension
         x = self.patch_embedding(x)
         x = self.transformer(x)
 
+        tmp = torch.zeros(batch, self.fc_list[0].out_features)
+        out = torch.zeros(batch, self.n_outputs)
         if self.is_decoding_mode:
             # pdb.set_trace()
-            x = self.fc(x)
-            x = self.final_layer(x)
-        return x
+            for i in range(batch):
+                tmp[i] = self.fc_list[subjects[i]](x[i].unsqueeze(0))
+                out[i] = self.final_layer_list[subjects[i]](tmp[i].unsqueeze(0))
+        return out
 
     def get_fc_size(self):
 
@@ -239,13 +246,13 @@ class _PatchEmbedding(nn.Module):
             nn.Conv2d(
                 n_filters_time, n_filters_time, (1, 1), stride=(1, 1)
             ),  # transpose, conv could enhance fiting ability slightly
-            Rearrange("b d_model 1 seq -> b seq d_model"), # no need, because it will be flattened
+            Rearrange("b d_model 1 seq -> b seq d_model"),  # no need, because it will be flattened
         )
 
     def forward(self, x: Tensor) -> Tensor:
         x = self.shallownet(x)
-        x = self.projection(x) 
-        
+        x = self.projection(x)
+
         return x
 
 
@@ -391,6 +398,7 @@ class _FullyConnected(nn.Module):
             nn.ELU(),
             # nn.Dropout(drop_prob_2),
         )
+        self.out_features = hidden_channels
 
     def forward(self, x):
         x = x.contiguous().view(x.size(0), -1)
