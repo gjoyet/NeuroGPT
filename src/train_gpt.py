@@ -342,64 +342,64 @@ def train(config: Dict = None) -> Trainer:
         time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset, output_path=output_path,
                                   config=config)
 
-    # UMAP
-    with torch.no_grad():
-        if not os.path.isdir(os.path.join(config["log_dir"], 'umap')):
-            os.mkdir(os.path.join(config["log_dir"], 'umap'))
-
-        trainer.model.eval()
-        trainer.model.encoder.is_decoding_mode = False
-
-        idxs = np.array(train_dataset.indices)
-        idxs = idxs[idxs % config["num_chunks"] == config["num_chunks"] - 1]  # select last chunk for every trial
-
-        for subject_pair in [(21, 24), (21, 116), (106, 116)]:
-            if not os.path.isdir(os.path.join(config["log_dir"], 'umap', 'umap_subjects-{}-{}'.format(*subject_pair))):
-                os.mkdir(os.path.join(config["log_dir"], 'umap', 'umap_subjects-{}-{}'.format(*subject_pair)))
-
-            labels = []
-            encodings = []
-
-            for sid in subject_pair:
-                subj_idxs = dataset.get_indices_of_single_subject(subject_id=sid)
-                subj_idxs_select = np.intersect1d(idxs, subj_idxs)
-
-                lab = [dataset[i]['labels'].item() for i in subj_idxs_select]
-                labels.append(lab)
-
-                subset = Subset(dataset, subj_idxs_select)
-                dataloader = torch.utils.data.DataLoader(dataset=subset, batch_size=len(subset), shuffle=False)
-
-                batch = next(iter(dataloader))
-                outputs = trainer.model.encoder(batch["inputs"])
-
-                encodings.append(outputs.contiguous().view(outputs.size(0), -1))
-
-            for nn, md in itertools.product([3, 5, 10, 15, 20], [0.1, 0.25, 0.5]):
-                reducer = umap.UMAP(n_neighbors=nn, min_dist=md)
-                reducer.fit(torch.cat(encodings).detach().numpy())
-                embeddings = [reducer.transform(enc.detach().numpy()) for enc in encodings]
-
-                dfs = []
-                for i, sid in enumerate(subject_pair):
-                    df = pd.DataFrame({
-                        "Subject ID": sid,
-                        "x_embed": embeddings[i][:, 0],
-                        "y_embed": embeddings[i][:, 1],
-                        "Label": labels[i]
-                    })
-                    dfs.append(df)
-
-                combined_df = pd.concat(dfs)
-                combined_df.to_csv(
-                    os.path.join(
-                        config["log_dir"],
-                        'umap',
-                        'umap_subjects-{}-{}'.format(*subject_pair),
-                        'umap_subjects-{}-{}_{}nn_{}md.csv'.format(*subject_pair, nn, md)
-                    ),
-                    index=False
-                )
+    # # UMAP
+    # with torch.no_grad():
+    #     if not os.path.isdir(os.path.join(config["log_dir"], 'umap')):
+    #         os.mkdir(os.path.join(config["log_dir"], 'umap'))
+    #
+    #     trainer.model.eval()
+    #     trainer.model.encoder.is_decoding_mode = False
+    #
+    #     idxs = np.array(train_dataset.indices)
+    #     idxs = idxs[idxs % config["num_chunks"] == config["num_chunks"] - 1]  # select last chunk for every trial
+    #
+    #     for subject_pair in [(21, 24), (21, 116), (106, 116)]:
+    #         if not os.path.isdir(os.path.join(config["log_dir"], 'umap', 'umap_subjects-{}-{}'.format(*subject_pair))):
+    #             os.mkdir(os.path.join(config["log_dir"], 'umap', 'umap_subjects-{}-{}'.format(*subject_pair)))
+    #
+    #         labels = []
+    #         encodings = []
+    #
+    #         for sid in subject_pair:
+    #             subj_idxs = dataset.get_indices_of_single_subject(subject_id=sid)
+    #             subj_idxs_select = np.intersect1d(idxs, subj_idxs)
+    #
+    #             lab = [dataset[i]['labels'].item() for i in subj_idxs_select]
+    #             labels.append(lab)
+    #
+    #             subset = Subset(dataset, subj_idxs_select)
+    #             dataloader = torch.utils.data.DataLoader(dataset=subset, batch_size=len(subset), shuffle=False)
+    #
+    #             batch = next(iter(dataloader))
+    #             outputs = trainer.model.encoder(batch["inputs"])
+    #
+    #             encodings.append(outputs.contiguous().view(outputs.size(0), -1))
+    #
+    #         for nn, md in itertools.product([3, 5, 10, 15, 20], [0.1, 0.25, 0.5]):
+    #             reducer = umap.UMAP(n_neighbors=nn, min_dist=md)
+    #             reducer.fit(torch.cat(encodings).detach().numpy())
+    #             embeddings = [reducer.transform(enc.detach().numpy()) for enc in encodings]
+    #
+    #             dfs = []
+    #             for i, sid in enumerate(subject_pair):
+    #                 df = pd.DataFrame({
+    #                     "Subject ID": sid,
+    #                     "x_embed": embeddings[i][:, 0],
+    #                     "y_embed": embeddings[i][:, 1],
+    #                     "Label": labels[i]
+    #                 })
+    #                 dfs.append(df)
+    #
+    #             combined_df = pd.concat(dfs)
+    #             combined_df.to_csv(
+    #                 os.path.join(
+    #                     config["log_dir"],
+    #                     'umap',
+    #                     'umap_subjects-{}-{}'.format(*subject_pair),
+    #                     'umap_subjects-{}-{}_{}nn_{}md.csv'.format(*subject_pair, nn, md)
+    #                 ),
+    #                 index=False
+    #             )
 
     print("Run completed successfully.")
 
