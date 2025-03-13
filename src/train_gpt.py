@@ -342,11 +342,13 @@ def train(config: Dict = None) -> Trainer:
             index=False
         )
 
+    # TODO: remove later.
+    torch.save(trainer.model.state_dict(), 'model_before_eval.bin')
+
     # TIME_DEPENDENT EVALUATION BY GROUPS (only test set)
-    for setting, ds in zip(['test', 'test_large'],
-                           [validation_dataset, validation_dataset_large]):
+    for setting, ds in zip(['test_large'],
+                           [validation_dataset_large]):
         indices_by_type = ds.get_indices_by_subject_type()
-        np.save('indices_by_type.npy', indices_by_type)
         for k, idxs in indices_by_type.items():
             output_path = os.path.join(
                 config["log_dir"],
@@ -355,13 +357,6 @@ def train(config: Dict = None) -> Trainer:
 
             if os.path.isfile(output_path):
                 continue
-
-            print(ds.num_chunks)
-            print(ds.first_chunk_idx)
-            print(ds.chunk_len)
-            print(ds.ovlp)
-
-            raise RuntimeError
 
             metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
             for chunk in range(ds.num_chunks):
