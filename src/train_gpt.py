@@ -304,7 +304,7 @@ def train(config: Dict = None) -> Trainer:
             test_prediction.label_ids
         )
 
-    validation_dataset_large = CHBDataset_NPZ(test_files, sample_keys=[
+    validation_dataset_large = CHBDataset_HDF5(test_files, sample_keys=[
         'inputs',
         'attention_mask'
     ], chunk_len=config["chunk_len"], num_chunks=121, ovlp=490,
