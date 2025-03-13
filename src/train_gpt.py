@@ -346,7 +346,7 @@ def train(config: Dict = None) -> Trainer:
     for setting, ds in zip(['test', 'test_large'],
                            [validation_dataset, validation_dataset_large]):
         indices_by_type = ds.get_indices_by_subject_type()
-        np.save('indices_by_type.npy', dictionary)
+        np.save('indices_by_type.npy', indices_by_type)
         for k, idxs in indices_by_type.items():
             output_path = os.path.join(
                 config["log_dir"],
