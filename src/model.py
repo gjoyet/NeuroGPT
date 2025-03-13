@@ -1,6 +1,8 @@
-#!/usr/bin/env python3 
+#!/usr/bin/env python3
+import os
 import torch
 from typing import Dict
+from safetensors.torch import load_file
 import warnings
 
 
@@ -58,6 +60,17 @@ class Model(torch.nn.Module):
         print(
             f'Loading pretrained model from {pretrained_path}'
         )
+
+        if pretrained_path.endswith('.safetensors'):
+            # Load the model from safetensors file
+            state_dict = load_file(pretrained_path)
+
+            pretrained_path = os.path.join(os.path.dirname(pretrained_path), "pytorch_model.bin")
+
+            if not os.path.isfile(pretrained_path):
+                # Save the model in pytorch_model.bin format
+                torch.save(state_dict, pretrained_path)
+                print("Conversion complete: pytorch_model.bin saved.")
 
         if next(self.parameters()).is_cuda:
             pretrained = torch.load(pretrained_path)
