@@ -326,7 +326,6 @@ def train(config: Dict = None) -> Trainer:
         metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
         for chunk in range(ds.num_chunks):
             idxs_select = idxs[idxs % ds.num_chunks == chunk]  # indices indicate the position of the chunk in the original trial
-            idxs_select = idxs_select[:50]  # TODO: @Guillaume: remove later, only testing
             test_prediction = trainer.predict(Subset(ds, idxs_select))
 
             metrics['chunk_position'].append(
