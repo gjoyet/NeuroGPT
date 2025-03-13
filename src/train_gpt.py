@@ -342,9 +342,6 @@ def train(config: Dict = None) -> Trainer:
             index=False
         )
 
-    # TODO: @Guillaume: remove later.
-    torch.save(trainer.model.state_dict(), 'model_before_eval.bin')
-
     # TIME_DEPENDENT EVALUATION BY GROUPS (only test set)
     for setting, ds in zip(['test_large'],
                            [validation_dataset_large]):
