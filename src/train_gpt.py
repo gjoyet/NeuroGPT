@@ -307,13 +307,13 @@ def train(config: Dict = None) -> Trainer:
     validation_dataset_large = CHBDataset_HDF5(test_files, sample_keys=[
         'inputs',
         'attention_mask'
-    ], chunk_len=config["chunk_len"], num_chunks=121, ovlp=490,
+    ], chunk_len=config["chunk_len"], num_chunks=131, ovlp=490,
                                   root_path=downstream_path, gpt_only=not config["use_encoder"],
                                   first_chunk_idx=config["first_chunk_idx"])
 
     # TIME-DEPENDENT EVALUATION (training and test sets)
-    for setting, ds in zip(['training', 'test', 'test_large'],
-                           [train_dataset, validation_dataset, validation_dataset_large]):
+    for setting, ds in zip(['training', 'test'],
+                           [train_dataset, validation_dataset]):
         output_path = os.path.join(
             config["log_dir"],
             'time_dependent_{}_metrics.csv'.format(setting)
@@ -346,6 +346,7 @@ def train(config: Dict = None) -> Trainer:
     for setting, ds in zip(['test', 'test_large'],
                            [validation_dataset, validation_dataset_large]):
         indices_by_type = ds.get_indices_by_subject_type()
+        np.save('indices_by_type.npy', dictionary)
         for k, idxs in indices_by_type.items():
             output_path = os.path.join(
                 config["log_dir"],
@@ -354,6 +355,13 @@ def train(config: Dict = None) -> Trainer:
 
             if os.path.isfile(output_path):
                 continue
+
+            print(ds.num_chunks)
+            print(ds.first_chunk_idx)
+            print(ds.chunk_len)
+            print(ds.ovlp)
+
+            raise RuntimeError
 
             metrics = {'chunk_position': [], 'accuracy': [], 'n_samples': []}
             for chunk in range(ds.num_chunks):
