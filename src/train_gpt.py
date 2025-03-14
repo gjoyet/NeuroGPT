@@ -298,7 +298,7 @@ def train(config: Dict = None) -> Trainer:
     dataset_large = CHBDataset_HDF5(filenames=filenames, sample_keys=[
         'inputs',
         'attention_mask'
-    ], chunk_len=config["chunk_len"], num_chunks=121, ovlp=490,
+    ], chunk_len=config["chunk_len"], num_chunks=131, ovlp=490,
                               root_path=downstream_path, gpt_only=not config["use_encoder"],
                               first_chunk_idx=config["first_chunk_idx"])
 
