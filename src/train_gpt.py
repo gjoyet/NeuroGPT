@@ -182,8 +182,7 @@ def train(config: Dict = None) -> Trainer:
         test_indices = partition[partition_id]
 
         # train mainly on timesteps that are closer to response
-        sel_training_indices = training_indices[np.isin(training_indices % config["num_chunks"] - config["num_chunks"],
-                                                        [-1, -2, -3, -5, -9, -config["num_chunks"]+1])]
+        sel_training_indices = training_indices[training_indices % config["num_chunks"] == config["num_chunks"] - 1]
 
         train_dataset = Subset(dataset, sel_training_indices)
         test_dataset = Subset(dataset, test_indices)
