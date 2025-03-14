@@ -323,18 +323,6 @@ def train(config: Dict = None) -> Trainer:
         time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset, output_path=output_path,
                                   config=config)
 
-    # FINE-GRAINED EVALUATION
-    output_path = os.path.join(
-        config["log_dir"],
-        'time_dependent_test_large_metrics.csv'
-    )
-
-    if not os.path.isfile(output_path):
-        idxs = np.array(validation_dataset_large.indices)
-
-        time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset_large, output_path=output_path,
-                                  config=config)
-
     # TIME_DEPENDENT EVALUATION BY GROUPS (only test set)
     indices_by_type = dataset.get_indices_by_subject_type()
     for k, idxs in indices_by_type.items():
