@@ -295,16 +295,17 @@ def train(config: Dict = None) -> Trainer:
             test_prediction.label_ids
         )
 
+    num_chunks_large = 131
     dataset_large = CHBDataset_HDF5(filenames=filenames, sample_keys=[
         'inputs',
         'attention_mask'
-    ], chunk_len=config["chunk_len"], num_chunks=131, ovlp=490,
+    ], chunk_len=config["chunk_len"], num_chunks=num_chunks_large, ovlp=490,
                               root_path=downstream_path, gpt_only=not config["use_encoder"],
                               first_chunk_idx=config["first_chunk_idx"])
 
     test_trial_indices = list(set([idx // config["num_chunks"] for idx in test_indices]))
     test_trial_indices.sort()
-    test_indices_large = np.array([i for x in test_trial_indices for i in range(x * 121, (x + 1) * 121)])
+    test_indices_large = np.array([i for x in test_trial_indices for i in range(x * num_chunks_large, (x + 1) * num_chunks_large)])
 
     validation_dataset_large = Subset(dataset, test_indices_large)
 

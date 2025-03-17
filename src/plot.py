@@ -28,7 +28,10 @@ def plot_results(results_folder_path):
 
     for group_name, mg in model_groups.items():
         for fn in ['time_dependent_training_metrics',
-                   'time_dependent_test_metrics']:  # later add 'scz', 'hc'
+                   'time_dependent_test_metrics',
+                   'time_dependent_test_large_metrics',
+                   'time_dependent_test_large_metrics_only_hc',
+                   'time_dependent_test_large_metrics_only_scz']:
 
             dfs = []
             for m in mg:
@@ -138,10 +141,35 @@ def compute_stats(df, var):
     return round(var_mean_diff_magnitude, 3), round(det1, 3), round(det2, 3)
 
 
+def combine_hc_and_scz_data(results_folder):
+    for directory in os.listdir(results_folder):
+        if directory == '.DS_Store':
+            continue
+
+        content = os.listdir(os.path.join(results_folder, directory))
+
+        if 'time_dependent_test_large_metrics_only_scz.csv' in content:
+            scz_csv = os.path.join(results_folder, directory, 'time_dependent_test_large_metrics_only_scz.csv')
+            hc_csv = os.path.join(results_folder, directory, 'time_dependent_test_large_metrics_only_hc.csv')
+
+            scz_df = pd.read_csv(scz_csv)
+            hc_df = pd.read_csv(hc_csv)
+
+            df = pd.DataFrame({'chunk_position': scz_df['chunk_position'],
+                               'accuracy': scz_df['accuracy'] * scz_df['n_samples'] + hc_df['accuracy'] * hc_df['n_samples'],
+                               'n_samples': scz_df['n_samples'] + hc_df['n_samples']})
+
+            df['accuracy'] = df['accuracy'] / df['n_samples']
+
+            df.to_csv(os.path.join(results_folder, directory, 'time_dependent_test_large_metrics.csv'), index=False)
+
+
 if __name__ == '__main__':
     results_folder = '../results/models/upstream'
     plots_folder = '../results/plots'
+    combine_hc_and_scz_data(results_folder=results_folder)
     if not os.path.isdir(plots_folder):
         os.mkdir(plots_folder)
-    plot_results(results_folder_path=results_folder)
-    plot_umap(results_folder_path=os.path.join(results_folder, 'umap-0', 'umap'))
+
+    # plot_results(results_folder_path=results_folder)
+    # plot_umap(results_folder_path=os.path.join(results_folder, 'umap-0', 'umap'))
