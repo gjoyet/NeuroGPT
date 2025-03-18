@@ -167,9 +167,11 @@ def combine_hc_and_scz_data(results_folder):
 if __name__ == '__main__':
     results_folder = '../results/models/upstream'
     plots_folder = '../results/plots'
-    combine_hc_and_scz_data(results_folder=results_folder)
+
+    # combine_hc_and_scz_data(results_folder=results_folder)
+
     if not os.path.isdir(plots_folder):
         os.mkdir(plots_folder)
 
-    # plot_results(results_folder_path=results_folder)
+    plot_results(results_folder_path=results_folder)
     # plot_umap(results_folder_path=os.path.join(results_folder, 'umap-0', 'umap'))
