@@ -182,9 +182,9 @@ def train(config: Dict = None) -> Trainer:
         test_indices = partition[partition_id]
 
         # select last chunk for every trial
-        training_indices = training_indices[training_indices % config["num_chunks"] == config["num_chunks"] - 1]
+        sel_training_indices = training_indices[training_indices % config["num_chunks"] == config["num_chunks"] - 1]
 
-        train_dataset = Subset(dataset, training_indices)
+        train_dataset = Subset(dataset, sel_training_indices)
         test_dataset = Subset(dataset, test_indices)
 
         validation_dataset = test_dataset
@@ -299,6 +299,7 @@ def train(config: Dict = None) -> Trainer:
         )
 
     # TIME-DEPENDENT EVALUATION (training and test sets)
+    train_dataset = Subset(dataset, training_indices)  # train_dataset contains all timesteps again
     for setting, ds in zip(['training', 'test'], [train_dataset, validation_dataset]):
         output_path = os.path.join(
             config["log_dir"],
