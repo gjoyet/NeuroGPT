@@ -299,17 +299,17 @@ def train(config: Dict = None) -> Trainer:
         )
 
     # TIME-DEPENDENT EVALUATION (training and test sets)
-    # evaluation on training set does not make sense here.
-    setting = 'test'
-    ds = validation_dataset
+    for setting, ds in zip(['training', 'test'], [train_dataset, validation_dataset]):
+        output_path = os.path.join(
+            config["log_dir"],
+            'time_dependent_{}_metrics.csv'.format(setting)
+        )
 
-    output_path = os.path.join(
-        config["log_dir"],
-        'time_dependent_{}_metrics.csv'.format(setting)
-    )
+        if os.path.isfile(output_path):
+            continue
 
-    if not os.path.isfile(output_path):
         idxs = np.array(ds.indices)
+
         time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset, output_path=output_path,
                                   config=config)
 
@@ -327,6 +327,37 @@ def train(config: Dict = None) -> Trainer:
         idxs = np.intersect1d(idxs, validation_dataset.indices)
 
         time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset, output_path=output_path,
+                                  config=config)
+
+    num_chunks_large = 131
+    dataset_large = CHBDataset_HDF5(filenames=filenames, sample_keys=[
+        'inputs',
+        'attention_mask'
+    ], chunk_len=config["chunk_len"], num_chunks=num_chunks_large, ovlp=490,
+                                    root_path=downstream_path, gpt_only=not config["use_encoder"],
+                                    first_chunk_idx=config["first_chunk_idx"])
+
+    test_trial_indices = list(set([idx // config["num_chunks"] for idx in test_indices]))
+    test_trial_indices.sort()
+    test_indices_large = np.array(
+        [i for x in test_trial_indices for i in range(x * num_chunks_large, (x + 1) * num_chunks_large)])
+
+    validation_dataset_large = Subset(dataset, test_indices_large)
+
+    # FINE-GRAINED EVALUATION BY GROUPS
+    indices_by_type = dataset_large.get_indices_by_subject_type()
+    for k, idxs in indices_by_type.items():
+        output_path = os.path.join(
+            config["log_dir"],
+            'time_dependent_test_large_metrics_only_{}.csv'.format(k)
+        )
+
+        if os.path.isfile(output_path):
+            continue
+
+        idxs = np.intersect1d(idxs, validation_dataset_large.indices)
+
+        time_dependent_evaluation(trainer=trainer, indices=idxs, dataset=dataset_large, output_path=output_path,
                                   config=config)
 
     # # TIME-DEPENDENT EVALUATION OF SINGLE SUBJECTS
