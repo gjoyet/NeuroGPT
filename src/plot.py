@@ -45,8 +45,12 @@ def plot_results(results_folder_path):
 
             combined_df = pd.concat(dfs)  # Merge all data into one DataFrame
 
+            sns.set_context("paper", font_scale=1.5)
+
             # Create a seaborn lineplot, passing the matrix directly to seaborn
-            plt.figure(figsize=(10, 6))  # Optional: Set the figure size
+            plt.figure(figsize=(10, 5))  # Optional: Set the figure size
+
+            sns.set_palette(sns.color_palette("deep"))
 
             # Create the lineplot, seaborn will automatically calculate confidence intervals
             sns.lineplot(data=combined_df, x=combined_df['chunk_position'] - 500, y='accuracy',
@@ -60,6 +64,7 @@ def plot_results(results_folder_path):
             plt.xlabel('Time (ms)')
             plt.ylabel('Accuracy')
             plt.legend()
+            plt.tight_layout()
 
             if len(mg) > 1:
                 run = group_name.split('-')[-3]
@@ -68,7 +73,7 @@ def plot_results(results_folder_path):
             else:
                 run = group_name[:-2]
 
-            plt.title(run)
+            # plt.title(run)
 
             plt.savefig(os.path.join('../results', 'plots', f'{run}_{fn[15:]}.png'))
             plt.close()
