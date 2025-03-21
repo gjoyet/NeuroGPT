@@ -168,13 +168,13 @@ class EEGConformer(EEGModuleMixin, nn.Module):
         x = torch.unsqueeze(x, dim=1)  # add one extra dimension
         x = self.patch_embedding(x)
 
-        if chunks > 1:
-            input_position = torch.repeat_interleave(input_position, chunks)
+        x = self.transformer(x)
+
+        # rescale position to sequence length AFTER passing through convolutional/transformer layers
         converted_position = (input_position / time * x.size(1)).to(torch.int)
+
         for i in range(len(x)):
             x[i] = self.positional_encoding(x[i], converted_position[i])
-
-        x = self.transformer(x)
 
         if self.is_decoding_mode:
             # pdb.set_trace()
@@ -459,7 +459,7 @@ class _FinalLayer(nn.Module):
 # Usually, positional encoding is used to indicate a tokens position in the sample (in our case, the sample
 # is a single chunk). However, we want it to indicate the position of the token in the complete original sequence.
 class _PositionalEncoding(nn.Module):
-    def __init__(self, d_model, embed_chunk_len, dropout=0.0, scale=0.05, max_chunks=10):
+    def __init__(self, d_model, embed_chunk_len, dropout=0.0, scale=0.25, max_chunks=10):
         super(_PositionalEncoding, self).__init__()
         self.dropout = nn.Dropout(p=dropout)
 
