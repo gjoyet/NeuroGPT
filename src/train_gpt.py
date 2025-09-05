@@ -295,11 +295,15 @@ def train(config: Dict = None) -> Trainer:
             test_prediction.label_ids
         )
 
-    num_chunks_large = 131
+    length_sample = (config["chunk_len"] - config["chunk_ovlp"]) * config["num_chunks"] + config["chunk_ovlp"]
+    print(f'Length sample: {length_sample}')
+    new_ovlp = 475
+    num_chunks_large = (length_sample - new_ovlp) / (config["chunk_len"] - new_ovlp)
+    print(f'Number of chunks for evaluation: {num_chunks_large}')
     dataset_large = CHBDataset_HDF5(filenames=filenames, sample_keys=[
         'inputs',
         'attention_mask'
-    ], chunk_len=config["chunk_len"], num_chunks=num_chunks_large, ovlp=490,
+    ], chunk_len=config["chunk_len"], num_chunks=num_chunks_large, ovlp=new_ovlp,
                               root_path=downstream_path, gpt_only=not config["use_encoder"],
                               first_chunk_idx=config["first_chunk_idx"])
 
