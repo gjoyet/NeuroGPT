@@ -182,7 +182,10 @@ def train(config: Dict = None) -> Trainer:
         test_indices = partition[partition_id]
 
         # select last chunk for every trial
-        sel_training_indices = training_indices[training_indices % config["num_chunks"] == config["num_chunks"] - 1]
+        if config["num_chunks"] == 16:  # i.e. resplocked
+            sel_training_indices = training_indices[np.isin(training_indices % config["num_chunks"], [11, 12, 13])]
+        elif config["num_chunks"] == 14:  # i.e. stimlocked
+            sel_training_indices = training_indices[np.isin(training_indices % config["num_chunks"], [7, 8, 9])]
 
         train_dataset = Subset(dataset, sel_training_indices)
         test_dataset = Subset(dataset, test_indices)
