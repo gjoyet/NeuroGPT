@@ -13,7 +13,7 @@ matplotlib.use('macOSX')
 def plot_results(results_folder_path):
     models = os.listdir(results_folder_path)
 
-    pattern = r"^(not-pretrained-)?(trialCV|subjCV)(-partition\d+)?(-.*)?|^train-only(-.*)?$"
+    pattern = r"^(not-pretrained-)?(trialCV|subjCV|train-only)(-partition\d+)?(-.*)?$"
     models = [s for s in models if re.match(pattern, s)]
 
     models.sort()
@@ -27,6 +27,8 @@ def plot_results(results_folder_path):
         model_groups[template].append(m)
 
     for group_name, mg in model_groups.items():
+        if group_name == 'train-only-on-last-chunk-0':
+            pass
         for fn in ['time_dependent_training_metrics',
                    'time_dependent_test_metrics',
                    'time_dependent_test_large_metrics',
@@ -44,6 +46,7 @@ def plot_results(results_folder_path):
                 continue
 
             combined_df = pd.concat(dfs)  # Merge all data into one DataFrame
+            max_acc = combined_df[combined_df['Pretrained'] == 'Pretrained'].groupby('chunk_position')['accuracy'].mean().max()
 
             sns.set_context("paper", font_scale=1.5)
 
@@ -55,18 +58,20 @@ def plot_results(results_folder_path):
             # Create the lineplot, seaborn will automatically calculate confidence intervals
             sns.lineplot(data=combined_df, x=combined_df['chunk_position'] - 500, y='accuracy',
                          errorbar='ci', hue='Pretrained')
-            sns.despine()
 
             plt.axhline(y=0.5, xmin=0, color='orange', linestyle='dashdot', linewidth=1, label='Random Chance')
             plt.axvline(x=0, ymin=0, ymax=0.05, color='black', linewidth=1, label='Stimulus Onset')
+            # plt.axhline(max_acc, xmin=0, xmax=1, color='grey', alpha=0.75, linestyle='--',
+            #             linewidth=1, label='_nolegend_')  #f"Max Accuracy: {max_acc:.3f}"
 
             # Set plot labels and title
+            sns.despine()
             plt.xlabel('Time (ms)')
             plt.ylabel('Accuracy')
             plt.legend()
             plt.tight_layout()
 
-            if len(mg) > 1:
+            if len(mg) > 2:
                 run = group_name.split('-')[-3]
                 if group_name.startswith('not-pretrained'):
                     run = 'not-pretrained-' + run
