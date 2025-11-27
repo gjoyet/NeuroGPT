@@ -337,7 +337,6 @@ def train(config: Dict = None) -> Trainer:
     print(f'Length sample: {length_sample}')
     new_ovlp = 475
     num_chunks_large = (length_sample - new_ovlp) / (config["chunk_len"] - new_ovlp)
-    num_chunks_large = int(num_chunks_large)
     print(f'Number of chunks for evaluation: {num_chunks_large}')
     dataset_large = CHBDataset_HDF5(filenames=filenames, sample_keys=[
         'inputs',
@@ -348,9 +347,8 @@ def train(config: Dict = None) -> Trainer:
 
     test_trial_indices = list(set([idx // config["num_chunks"] for idx in test_indices]))
     test_trial_indices.sort()
-    test_trial_indices = test_trial_indices.astype(int)
     test_indices_large = np.array(
-        [i for x in test_trial_indices for i in range(x * num_chunks_large, (x + 1) * num_chunks_large)])
+        [i for x in test_trial_indices for i in range(int(x) * int(num_chunks_large), int(x + 1) * int(num_chunks_large))])
 
     validation_dataset_large = Subset(dataset, test_indices_large)
 
