@@ -72,11 +72,15 @@ class CHBDataset_HDF5(EEGDataset):
             if match:
                 sid = int(match.group(1))
                 if sid < 100:
-                    scz_indices.extend(range(self.cumnum_trials[i] * self.num_chunks,
-                                             self.cumnum_trials[i+1] * self.num_chunks))
+                    print(type(self.cumnum_trials[i]))
+                    print(type(self.num_chunks))
+                    scz_indices.extend(range(int(self.cumnum_trials[i]) * int(self.num_chunks),
+                                             int(self.cumnum_trials[i+1]) * int(self.num_chunks)))
                 else:
-                    hc_indices.extend(range(self.cumnum_trials[i] * self.num_chunks,
-                                            self.cumnum_trials[i + 1] * self.num_chunks))
+                    print(type(self.cumnum_trials[i]))
+                    print(type(self.num_chunks))
+                    hc_indices.extend(range(int(self.cumnum_trials[i]) * int(self.num_chunks),
+                                            int(self.cumnum_trials[i + 1]) * int(self.num_chunks)))
 
         return {'scz': np.array(scz_indices), 'hc': np.array(hc_indices)}
 
