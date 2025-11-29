@@ -309,7 +309,7 @@ def train(config: Dict = None) -> Trainer:
 
     test_trial_indices = list(set([idx // config["num_chunks"] for idx in test_indices]))
     test_trial_indices.sort()
-    test_indices_large = np.array([i for x in test_trial_indices for i in range(x * num_chunks_large, (x + 1) * num_chunks_large)])
+    test_indices_large = np.array([i for x in test_trial_indices for i in range(int(x) * int(num_chunks_large), int(x + 1) * int(num_chunks_large))])
 
     validation_dataset_large = Subset(dataset, test_indices_large)
 
